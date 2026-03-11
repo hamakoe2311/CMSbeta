@@ -1,6 +1,6 @@
 // --- Global State ---
 let allItems =[];
-let folderSettings =[];
+let folderSettings = [];
 let musicLibrary =[];
 let currentFolderId = null;
 let currentSortOrder = 'custom';
@@ -13,7 +13,6 @@ let isPlaying = false;
 let currentPlayingItem = null;
 
 let ytPlayer = null;
-let nicoEndTimer = null; // ニコニコ動画の終了タイマー
 let isTransitioning = false; // 連続スキップによるバグ防止用フラグ
 
 // --- DOM Elements ---
@@ -37,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sortSelect.addEventListener('change', handleSortChange);
     nicoCheckbox.addEventListener('change', handleNicoFilterChange);
     setupPlayerControls();
+    
+    // ニコニコ動画のIframeからのメッセージ（再生終了やロード完了など）を受け取る
+    window.addEventListener('message', handleNicoMessage);
 });
 
 // JSONファイルの読み込み
@@ -298,7 +300,7 @@ function loadVideo(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
     
     currentIndex = index;
-    isTransitioning = false; 
+    isTransitioning = false; // 強制ロード時はリセット
     const item = currentPlaylist[index];
     
     currentPlayingItem = item;
@@ -306,12 +308,6 @@ function loadVideo(index) {
     
     updatePlayerUI(item);
     updateActiveTrackUI();
-
-    // 次の動画が読み込まれたら、既存のニコニコタイマーは確実に解除する
-    if (nicoEndTimer) {
-        clearTimeout(nicoEndTimer);
-        nicoEndTimer = null;
-    }
 
     const container = document.getElementById('player-container');
 
@@ -348,24 +344,18 @@ function loadVideo(index) {
         if (item.site === 'niconico') {
             const nicoId = getNicoId(item.url);
             
-            // ★安定版: API(jsapi)を利用せず、単純なiframe + autoplayで再生
-            container.innerHTML = `
-                <iframe id="nico-player"
-                    src="https://embed.nicovideo.jp/watch/${nicoId}?autoplay=1"
-                    allow="autoplay; fullscreen; encrypted-media"
-                    style="width:100%; height:100%; border:none;">
-                </iframe>
-            `;
-
-            // ★安定版: JSON内に duration (秒数) があれば、疑似タイマーで次へ進める
-            const durationSec = parseInt(item.duration, 10);
-            if (!isNaN(durationSec) && durationSec > 0) {
-                // 動画の長さ + 2秒の猶予を持たせて次の動画へ自動遷移
-                nicoEndTimer = setTimeout(() => {
-                    playNextVideo();
-                }, (durationSec * 1000) + 2000);
-            }
-
+            // 少し遅延させてIframeを生成する（ブラウザのメモリ解放とエラー防止のため）
+            setTimeout(() => {
+                const iframe = document.createElement('iframe');
+                iframe.id = 'nico-player';
+                // ★重要: エラーを避けるため autoplay=1 は付与せず、APIの準備完了を待つ
+                iframe.src = `https://embed.nicovideo.jp/watch/${nicoId}?jsapi=1&playerId=1`;
+                iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media');
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                container.appendChild(iframe);
+            }, 50);
         } else {
             // その他のサイト用フォールバック
             container.innerHTML = `<iframe src="${item.url}" allowfullscreen allow="autoplay" style="width:100%; height:100%; border:none;"></iframe>`;
@@ -384,13 +374,7 @@ function getYouTubeId(url) {
     }
 }
 
-// ★ ニコニコ動画のID抽出を強化 (sm/nm/so 等に確実に対応)
 function getNicoId(url) {
-    const match = url.match(/(sm|nm|so)\d+/);
-    if (match) {
-        return match[0];
-    }
-    // 例外的なURLのフォールバック
     try {
         const urlObj = new URL(url);
         return urlObj.pathname.split('/').pop();
@@ -435,6 +419,44 @@ function onPlayerStateChange(event) {
     }
 }
 
+// ★ニコニコ動画からのイベント受信と自動再生の制御
+function handleNicoMessage(e) {
+    if (e.origin !== 'https://embed.nicovideo.jp') return;
+    if (!currentPlayingItem || currentPlayingItem.site !== 'niconico') return;
+    if (!e.data || !e.data.eventName) return;
+
+    const eventName = e.data.eventName;
+
+    if (eventName === 'loadComplete') {
+        // ロード完了時に安全にAPI経由で再生指示を送る
+        const nicoIframe = document.getElementById('nico-player');
+        if (nicoIframe && nicoIframe.contentWindow) {
+            setTimeout(() => {
+                nicoIframe.contentWindow.postMessage({
+                    sourceConnectorType: 1,
+                    playerId: "1",
+                    eventName: "play"
+                }, 'https://embed.nicovideo.jp');
+            }, 150); // 一瞬待つことで再生ブロックエラーを回避
+        }
+    } else if (eventName === 'playerStatusChange') {
+        const status = e.data.data.playerStatus;
+        // 1: 読込中, 2: 再生中, 3: 一時停止, 4: 再生終了
+        if (status === 4) {
+            playNextVideo(); // 再生終了で次の動画へ
+        } else if (status === 2) {
+            isPlaying = true;
+            updatePlayPauseIcon();
+        } else if (status === 3) {
+            isPlaying = false;
+            updatePlayPauseIcon();
+        }
+    } else if (eventName === 'error') {
+        console.warn("Niconico Player Error:", e.data);
+        setTimeout(() => playNextVideo(), 5000); // エラー時は5秒後にスキップ
+    }
+}
+
 function togglePlay() {
     if (!currentPlayingItem) return;
     
@@ -448,8 +470,14 @@ function togglePlay() {
             ytPlayer.pauseVideo();
         }
     } else if (currentPlayingItem.site === 'niconico') {
-        // ※ NiconicoはAPIを使用しないため、外部からの確実な一時停止/再生操作はできません。
-        // UI（アイコン）の切り替えのみを行い、実際の再生状態はユーザーが動画内をクリックして操作する想定です。
+        const nicoIframe = document.getElementById('nico-player');
+        if (nicoIframe && nicoIframe.contentWindow) {
+            nicoIframe.contentWindow.postMessage({
+                sourceConnectorType: 1,
+                playerId: "1",
+                eventName: isPlaying ? "play" : "pause"
+            }, 'https://embed.nicovideo.jp');
+        }
     }
 }
 
