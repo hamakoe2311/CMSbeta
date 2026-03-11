@@ -1,1 +1,156 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CMS Web Player (Multi-UI)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.youtube.com/iframe_api"></script>
+</head>
+<body class="theme-modern">
+
+    <!-- ファイルインポート画面 -->
+    <div id="import-screen" class="overlay-screen">
+        <div class="start-content panel-glass">
+            <h1 class="theme-text" style="margin-top:0;">CMS Web Player</h1>
+            <p>拡張機能からエクスポートした<br>JSONファイルを読み込んでください。</p>
+            <label for="import-json" class="custom-file-upload theme-btn">
+                <i class="fas fa-file-import"></i> ファイルを選択
+            </label>
+            <input type="file" id="import-json" accept=".json">
+        </div>
+    </div>
+
+    <!-- 再生準備完了画面 -->
+    <div id="ready-screen" class="overlay-screen hidden">
+        <div class="start-content panel-glass" style="text-align: center;">
+            <h2 class="theme-text" style="margin-top:0;">Ready</h2>
+            <p>データの読み込みが完了しました。<br>再生を開始します。</p>
+            <button class="btn-start theme-btn" id="btn-user-start">
+                <i class="fas fa-play"></i> PLAY START
+            </button>
+        </div>
+    </div>
+
+    <!-- 起動画面群 (Boot Screens) -->
+    <div id="boot-screen" class="overlay-screen hidden" style="z-index: 9998; background:#000;">
+        <!-- MODERN -->
+        <div class="boot-container boot-modern hidden">
+            <i class="fas fa-circle-notch fa-spin fa-4x" style="color:var(--accent-color);"></i>
+            <h3 style="margin-top:20px; color:#fff;">SYSTEM STARTING...</h3>
+        </div>
+        <!-- STANDARD -->
+        <div class="boot-container boot-standard hidden">
+            <h2 style="color:#fff; text-align:left; border-bottom:2px solid var(--accent-color); padding-bottom:10px;">
+                <i class="fas fa-terminal"></i> OS INITIALIZATION
+            </h2>
+            <div style="width:100%; height:10px; background:#333; margin-top:20px;">
+                <div id="boot-std-fill" style="height:100%; width:0%; background:var(--accent-color); transition: width 2.8s linear;"></div>
+            </div>
+            <p style="text-align:left; color:#888; margin-top:10px; font-family:monospace;">Loading modules...</p>
+        </div>
+        <!-- NERV -->
+        <div class="boot-container boot-nerv hidden" style="text-align:center;">
+            <h1 style="color:#ff9d00; font-family:serif; font-size:4rem; margin:0; border-bottom:2px solid #ff9d00;">NERV</h1>
+            <p style="color:#ff9d00; font-family:monospace; letter-spacing:2px;">TACTICAL NAVIGATION SYSTEM</p>
+            <p style="color:#ff9d00; font-family:monospace; margin-top:30px; animation: blink 1s infinite;">SYNC RATE: 100%</p>
+        </div>
+    </div>
+
+    <!-- メインプレイヤーUI -->
+    <div id="main-app" class="hidden">
+        <div class="widget-container">
+            <!-- 左列 (Player & Controls) -->
+            <div class="widget-col-left">
+                <div id="player-wrapper" class="panel-glass">
+                    <div id="player-container"></div>
+                </div>
+
+                <div class="widget-player panel-glass">
+                    <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art">
+                    <div class="widget-info">
+                       <h2 id="widget-title" class="theme-text">Not Playing</h2>
+                        <p id="widget-artist">---</p>
+                    </div>
+                    <div class="widget-controls">
+                        <button id="widget-btn-prev" title="前の動画"><i class="fas fa-backward-step"></i></button>
+                        <button id="widget-btn-play" class="play-btn theme-btn" title="再生/一時停止"><i class="fas fa-play" id="widget-play-icon"></i></button>
+                        <button id="widget-btn-next" title="次の動画"><i class="fas fa-forward-step"></i></button>
+                        <button id="btn-open-settings" title="設定" style="margin-left:auto;"><i class="fas fa-cog"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右列 (Library) -->
+            <div class="widget-col-right panel-glass">
+                <div class="widget-nav">
+                    <h3 class="library-title theme-text">Library</h3>
+                    <div class="controls-wrapper">
+                        <label class="filter-option" style="cursor: pointer;">
+                            <input type="checkbox" id="exclude-nico"> ニコニコ除外
+                        </label>
+                        <select id="widget-sort-select" class="widget-search">
+                            <option value="custom">🔢 カスタム順</option>
+                            <option value="title_asc">🔤 名前 (A-Z)</option>
+                            <option value="title_desc">🔤 名前 (Z-A)</option>
+                            <option value="newest">📅 新しい順</option>
+                            <option value="oldest">📅 古い順</option>
+                            <option value="playCount_desc">▶ 再生数順</option>
+                        </select>
+                        <input type="text" id="widget-search-box" class="widget-search" placeholder="Search...">
+                    </div>
+                </div>
+                <div class="library-content">
+                    <div class="w-folder-list" id="widget-folder-list"></div>
+                    <div class="w-track-list" id="widget-track-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定モーダル -->
+    <div id="settings-modal" class="overlay-screen hidden" style="z-index: 9999;">
+        <div class="panel-glass settings-window">
+            <h2 class="theme-text" style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+                <i class="fas fa-cog"></i> System Settings
+            </h2>
+            
+            <div class="setting-row">
+                <label>UI Theme</label>
+                <select id="set-theme" class="widget-search">
+                    <option value="modern">Modern Glass</option>
+                    <option value="standard">Standard Solid</option>
+                    <option value="nerv">NERV Tactical</option>
+                </select>
+            </div>
+            
+            <div class="setting-row">
+                <label>Background Image</label>
+                <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
+                <button id="btn-clear-bg" class="mini-btn">Clear</button>
+            </div>
+
+            <div class="setting-row">
+                <label>Panel Opacity: <span id="op-val">0.5</span></label>
+                <input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5">
+            </div>
+
+            <div class="setting-row">
+                <label>Boot Sound (起動音)</label>
+                <input type="file" id="set-boot-sound" accept="audio/*" style="font-size:0.8rem;">
+                <button id="btn-clear-sound" class="mini-btn">Clear</button>
+            </div>
+
+            <div class="settings-actions">
+                <button id="btn-save-settings" class="theme-btn" style="flex:1;">Save & Apply</button>
+                <button id="btn-reset-settings" style="background:#ff4444; color:#fff; border:none; border-radius:30px; cursor:pointer;">Reset</button>
+                <button id="btn-close-settings" style="background:transparent; color:#fff; border:1px solid #fff; border-radius:30px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
