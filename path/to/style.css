@@ -13,25 +13,26 @@
     --bg-image: none;
 }
 
-/* === THEME: STANDARD === */
-body.theme-standard {
-    --bg-color: #1a1a1a;
-    --panel-rgb: 30, 30, 30;
-    --user-opacity: 0.9;
-    --border-color: #444;
-    --accent-color: #4CAF50;
-    --panel-shadow: none;
+/* === THEME: TOYOTA (車載UI風) === */
+body.theme-toyota {
+    --bg-color: #0a0a0c;
+    --panel-rgb: 20, 25, 30;
+    --user-opacity: 0.95;
+    --border-color: #004488;
+    --accent-color: #00aaff;
+    --panel-shadow: inset 0 0 10px rgba(0, 170, 255, 0.1);
     --border-radius: 4px;
-    --font-family: Arial, sans-serif;
+    --font-family: "Meiryo", "Hiragino Kaku Gothic Pro", sans-serif;
 }
-/* === THEME: NERV === */
+
+/* === THEME: NERV (エヴァ風) === */
 body.theme-nerv {
     --bg-color: #000;
     --panel-rgb: 0, 0, 0;
     --user-opacity: 0.85;
-    --border-color: #ff9d00;
+    --border-color: #ff3300;
     --accent-color: #ff9d00;
-    --panel-shadow: 0 0 15px rgba(255, 157, 0, 0.2);
+    --panel-shadow: 0 0 10px rgba(255, 51, 0, 0.3);
     --border-radius: 0px;
     --font-family: 'Share Tech Mono', 'Courier New', monospace;
     --text-color: #ff9d00;
@@ -55,6 +56,11 @@ body, html {
     display: flex; justify-content: center; align-items: center;
     background: rgba(0, 0, 0, 0.85); z-index: 9000;
 }
+.start-content { padding: 40px; text-align: center; }
+.start-content p { margin-bottom: 20px; }
+.custom-file-upload { display: inline-block; padding: 10px 20px; cursor: pointer; }
+input[type="file"] { display: none; }
+.btn-start { padding: 15px 30px; font-size: 1.2rem; }
 
 .panel-glass {
     background: rgba(var(--panel-rgb), var(--user-opacity));
@@ -68,7 +74,6 @@ body.theme-modern .panel-glass {
 }
 
 .theme-text { color: var(--accent-color); }
-
 .theme-btn {
     background: var(--accent-color); color: #000; border: none;
     border-radius: var(--border-radius); cursor: pointer; font-weight: bold;
@@ -76,15 +81,46 @@ body.theme-modern .panel-glass {
 }
 .theme-btn:hover { filter: brightness(1.2); }
 
-/* --- Boot Screen --- */
-.boot-container { width: 300px; padding: 40px; text-align: center; }
+/* ==================================
+   Boot Screen (起動画面) UI
+   ================================== */
+.boot-skip-hint { position: absolute; bottom: 30px; right: 30px; color: rgba(255,255,255,0.4); font-size: 0.9rem; animation: pulse-icon 2s infinite; pointer-events: none; }
+.boot-container { width: 100%; height: 100%; position: absolute; top:0; left:0; display: flex; justify-content: center; align-items: center; }
+
+/* ② 現代UI風 */
+.boot-modern { flex-direction: column; gap: 20px; }
+.modern-logo { font-size: 3rem; color: #fff; font-weight: 300; letter-spacing: 2px; animation: fadeInUp 1s ease; }
+.modern-spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
+.modern-text { color: #888; letter-spacing: 1px; animation: fadeInUp 1.5s ease; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ③ トヨタナビ風 */
+.boot-toyota { background: #050505; flex-direction: column; }
+.toyota-step { transition: opacity 0.8s ease; position: absolute; text-align: center; }
+.toyota-logo { font-size: 2.5rem; color: #00aaff; letter-spacing: 3px; font-weight: bold; }
+.toyota-warning { font-size: 1.5rem; line-height: 1.6; color: #eee; }
+.hidden-step { opacity: 0; pointer-events: none; }
+
+/* ① エヴァ風 */
+.boot-nerv { flex-direction: column; background: #000; border: 10px solid #ff3300; box-sizing: border-box; }
+.nerv-scanline { position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: rgba(255, 157, 0, 0.6); animation: scan 2s linear infinite; z-index: 10; }
+.nerv-top-bar { position: absolute; top: 10px; left: 20px; color: #ff3300; font-family: monospace; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; }
+.nerv-bottom-log { position: absolute; bottom: 20px; left: 20px; color: #ff9d00; font-family: monospace; font-size: 1rem; opacity: 0.8; }
+.nerv-center { text-align: center; }
+.nerv-title { font-size: 7rem; color: #ff9d00; margin: 0; border-bottom: 5px solid #ff9d00; line-height: 1; }
+.nerv-warning-box { background: #ff3300; color: #000; font-weight: bold; font-size: 2.5rem; padding: 5px 30px; letter-spacing: 5px; margin: 20px auto; display: inline-block; animation: blink 0.5s infinite; }
+.nerv-text { font-family: monospace; color: #ff9d00; font-size: 1.5rem; letter-spacing: 2px; }
+.nerv-blink { animation: blink 1s infinite; }
+@keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes pulse-icon { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
 
 /* --- Main App Layout --- */
 #main-app { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
 .widget-container { display: flex; gap: 20px; width: 95%; height: 95%; max-width: 1400px; z-index: 10; }
-
-body.theme-standard .widget-container { flex-direction: row-reverse; gap: 10px; }
+body.theme-toyota .widget-container { flex-direction: row-reverse; gap: 10px; }
 body.theme-nerv .widget-container { gap: 10px; }
 
 .widget-col-left { display: flex; flex-direction: column; gap: 20px; width: 60%; min-width: 400px; }
@@ -124,6 +160,7 @@ select.widget-search option { background-color: var(--bg-color); color: var(--te
 .w-t-item.active { background: rgba(128,128,128,0.3); font-weight: bold; border-left: 3px solid var(--text-color); color: var(--text-color); }
 
 body.theme-nerv .w-f-item.active, body.theme-nerv .w-t-item.active { background: var(--accent-color); color: #000; border-left: none; }
+body.theme-toyota .w-f-item.active, body.theme-toyota .w-t-item.active { background: rgba(0, 170, 255, 0.2); border-left-color: var(--accent-color); }
 
 .w-t-idx { display: inline-block; width: 25px; text-align: right; margin-right: 12px; opacity: 0.6; font-size: 0.85rem;}
 .w-t-playing-icon { display: inline-flex; justify-content: center; align-items: center; width: 25px; margin-right: 12px; color: var(--accent-color); animation: pulse-icon 1.5s infinite; }
