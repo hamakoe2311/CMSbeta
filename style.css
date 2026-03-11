@@ -12,12 +12,14 @@ body, html {
     margin: 0;
     padding: 0;
     width: 100%;
-    height: 100%;
+    /* モバイルブラウザのURLバー対応のため dvh を使用 */
+    height: 100dvh;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg-color);
     color: var(--text-color);
     overflow: hidden;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 .hidden { display: none !important; }
@@ -135,11 +137,12 @@ body, html {
 .widget-controls { display: flex; gap: 20px; align-items: center; }
 .widget-controls button {
     background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; transition: transform 0.1s;
+    padding: 10px;
 }
 .widget-controls button:active { transform: scale(0.9); }
 .widget-controls .play-btn {
     background: #fff; color: #000; width: 50px; height: 50px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+    display: flex; align-items: center; justify-content: center; font-size: 1.3rem; padding: 0;
 }
 
 /* --- Library (Right Column) --- */
@@ -180,19 +183,107 @@ select.widget-search option { background-color: #1e293b; color: #ffffff; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
 
-/* --- Mobile / Responsive Design --- */
+/* =========================================
+   Mobile / Responsive Design 
+   ========================================= */
 @media (max-width: 900px) {
-    .widget-container { flex-direction: column; width: 100%; height: 100%; padding: 5px; box-sizing: border-box; gap: 10px; }
-    .widget-col-left { width: 100%; height: auto; min-width: 0; gap: 10px;}
-    #player-wrapper { height: 35vh; min-height: 220px; padding: 5px; }
-    .widget-player { height: 90px; padding: 10px; }
-    .widget-art { width: 70px; height: 70px; }
-    .widget-info h2 { font-size: 1rem; }
+    /* 全画面を活用するレイアウト */
+    .widget-container { 
+        flex-direction: column; 
+        width: 100%; 
+        height: 100dvh; 
+        padding: 0; 
+        gap: 0; 
+        border-radius: 0;
+    }
+    .panel-glass {
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .widget-col-left { 
+        width: 100%; 
+        height: auto; 
+        min-width: 0; 
+        gap: 0;
+    }
+    /* 動画部分：モバイルでは16:9比率を維持して無駄なスペースを削減 */
+    #player-wrapper { 
+        padding: 0; 
+        height: auto; 
+        aspect-ratio: 16 / 9; 
+        display: block;
+    }
+    #player-container {
+        border-radius: 0;
+    }
+    
+    .widget-player { 
+        height: auto; 
+        padding: 12px env(safe-area-inset-right) 12px env(safe-area-inset-left); 
+        gap: 15px; 
+    }
+    .widget-art { width: 60px; height: 60px; border-radius: 8px; }
+    .widget-info h2 { font-size: 1rem; margin-bottom: 2px;}
     .widget-info p { font-size: 0.8rem; }
-    .widget-col-right { padding: 10px; }
+    .widget-controls { gap: 10px; }
+    .widget-controls .play-btn { width: 45px; height: 45px; font-size: 1.1rem; }
+
+    .widget-col-right { 
+        padding: 15px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); 
+    }
+    .library-title { display: none; } /* モバイルでは見出しを隠し省スペース化 */
+
+    /* 検索・ソート部分をタップしやすいグリッドに */
+    .controls-wrapper { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 8px; 
+        width: 100%; 
+    }
+    .filter-option { grid-column: span 2; margin-bottom: 4px; }
+    .widget-search { 
+        width: 100%; 
+        box-sizing: border-box; 
+        /* iOS Safari のズームイン防止 */
+        font-size: 16px; 
+        padding: 8px 10px;
+    }
+    #widget-sort-select { grid-column: 1 / 2; }
+    #widget-search-box { grid-column: 2 / 3; }
+
     .library-content { flex-direction: column; gap: 5px;}
-    .w-folder-list { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); padding-right: 0; padding-bottom: 5px; margin-bottom: 5px; flex-direction: row; overflow-x: auto; overflow-y: hidden; height: 50px; }
-    .w-f-item { width: 140px; text-align: center; justify-content: center; padding: 8px; }
+
+    /* フォルダリストを横スクロールのピル(タブ)型に */
+    .w-folder-list { 
+        width: 100%; 
+        border: none; 
+        padding: 0 0 5px 0; 
+        margin-bottom: 5px; 
+        flex-direction: row; 
+        overflow-x: auto; 
+        overflow-y: hidden; 
+        height: auto; 
+        gap: 8px;
+        scrollbar-width: none; /* Firefox対応 */
+    }
+    .w-folder-list::-webkit-scrollbar { display: none; } /* Chrome/Safariのスクロールバー非表示 */
+    
+    .w-f-item { 
+        width: auto; 
+        justify-content: center; 
+        padding: 8px 16px; 
+        border-radius: 20px; 
+        border: 1px solid rgba(255,255,255,0.2); 
+        background: rgba(255,255,255,0.1); 
+        white-space: nowrap;
+    }
+    .w-f-item.active { 
+        background: var(--accent-color); 
+        border-color: var(--accent-color); 
+        border-left: none; /* 下線をなくし背景色で表現 */
+    }
+
     .w-track-list { padding-left: 0; }
-    .w-t-item { padding: 10px; }
+    .w-t-item { padding: 12px 10px; font-size: 1rem; }
 }
