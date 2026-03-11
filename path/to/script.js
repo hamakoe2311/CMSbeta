@@ -8,7 +8,7 @@ const defaultSettings = {
 let appSettings = { ...defaultSettings };
 
 // --- Global State ---
-let allItems = [];
+let allItems =[];
 let folderSettings = [];
 let musicLibrary =[];
 let currentFolderId = null;
@@ -23,6 +23,10 @@ let currentPlayingItem = null;
 
 let ytPlayer = null;
 let isTransitioning = false;
+
+// Boot Screen timeouts
+let bootTimeoutId;
+let toyotaStepTimeoutId;
 
 // --- DOM Elements ---
 const importScreen = document.getElementById('import-screen');
@@ -119,7 +123,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-close-settings').onclick = () => {
         modal.classList.add('hidden');
-        applyThemeSettings(); // キャンセル時は元に戻す
+        applyThemeSettings();
     };
 
     document.getElementById('btn-reset-settings').onclick = () => {
@@ -177,24 +181,41 @@ function startGame() {
         audio.volume = 0.5; audio.play().catch(e => console.warn("Boot Sound Play Error:", e));
     }
 
-    // Standard用プログレスアニメーション
-    if (appSettings.theme === 'standard') {
-        const fill = document.getElementById('boot-std-fill');
-        fill.style.width = '0%';
-        setTimeout(() => fill.style.width = '100%', 100);
+    // トヨタナビ用ステップアニメーション
+    if (appSettings.theme === 'toyota') {
+        const logo = activeBoot.querySelector('.toyota-logo');
+        const warning = activeBoot.querySelector('.toyota-warning');
+        logo.classList.remove('hidden-step');
+        warning.classList.add('hidden-step');
+        
+        toyotaStepTimeoutId = setTimeout(() => {
+            logo.classList.add('hidden-step');
+            warning.classList.remove('hidden-step');
+        }, 1500); // 1.5秒後に注意書きへフェード
     }
 
-    setTimeout(() => {
-        bootScreen.classList.add('hidden');
-        mainApp.classList.remove('hidden');
-        
-        if (currentFolderId) {
-            const folder = musicLibrary.find(f => f.id === currentFolderId);
-            const songs = folder ? folder.songs :[];
-            if (songs.length > 0) startPlaylist(songs, 0);
-            else startPlaylist(musicLibrary.find(f=>f.id==='__all')?.songs ||[], 0);
-        }
-    }, 3000); // 3秒で起動完了
+    // スキップイベント（画面クリックで即終了）
+    bootScreen.onclick = endBootSequence;
+
+    // 通常は4秒で自動遷移
+    bootTimeoutId = setTimeout(endBootSequence, 4000);
+}
+
+function endBootSequence() {
+    // スキップ・タイムアウト両方で呼ばれる
+    clearTimeout(bootTimeoutId);
+    clearTimeout(toyotaStepTimeoutId);
+    bootScreen.onclick = null; // イベント解除
+
+    bootScreen.classList.add('hidden');
+    mainApp.classList.remove('hidden');
+    
+    if (currentFolderId) {
+        const folder = musicLibrary.find(f => f.id === currentFolderId);
+        const songs = folder ? folder.songs :[];
+        if (songs.length > 0) startPlaylist(songs, 0);
+        else startPlaylist(musicLibrary.find(f=>f.id==='__all')?.songs ||[], 0);
+    }
 }
 
 function handleFileImport(event) {
@@ -342,7 +363,7 @@ function handleSearch(e) { currentSearchQuery = e.target.value; buildLibrary(); 
 function handleSortChange(e) { currentSortOrder = e.target.value; buildLibrary(); selectFolder(currentFolderId || musicLibrary[0]?.id); }
 function handleNicoFilterChange(e) { excludeNico = e.target.checked; buildLibrary(); renderFolders(); selectFolder(currentFolderId || musicLibrary[0]?.id); }
 
-// --- Player Logic (ベース維持) ---
+// --- Player Logic ---
 function setupPlayerControls() {
     document.getElementById('widget-btn-play').onclick = togglePlay;
     document.getElementById('widget-btn-next').onclick = playNextVideo;
