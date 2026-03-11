@@ -2,7 +2,8 @@
     /* デフォルト (MODERN GLASS) 変数 */
     --bg-color: #0f172a;
     --panel-rgb: 255, 255, 255;
-    --user-opacity: 0.1;
+    --panel-alpha: 0.5; /* JS側で 0.0〜1.0 に動的変更 */
+    --panel-blur: 10px; /* JS側で 0px〜20px に動的変更 */
     --border-color: rgba(255, 255, 255, 0.1);
     --text-color: #fff;
     --sub-text-color: #aaa;
@@ -17,7 +18,6 @@
 body.theme-toyota {
     --bg-color: #0a0a0c;
     --panel-rgb: 20, 25, 30;
-    --user-opacity: 0.95;
     --border-color: #004488;
     --accent-color: #00aaff;
     --panel-shadow: inset 0 0 10px rgba(0, 170, 255, 0.1);
@@ -29,7 +29,6 @@ body.theme-toyota {
 body.theme-nerv {
     --bg-color: #000;
     --panel-rgb: 0, 0, 0;
-    --user-opacity: 0.85;
     --border-color: #ff3300;
     --accent-color: #ff9d00;
     --panel-shadow: 0 0 10px rgba(255, 51, 0, 0.3);
@@ -58,19 +57,21 @@ body, html {
 }
 .start-content { padding: 40px; text-align: center; }
 .start-content p { margin-bottom: 20px; }
+
 .custom-file-upload { display: inline-block; padding: 10px 20px; cursor: pointer; }
-input[type="file"] { display: none; }
+/* ★修正箇所：すべてのfile入力ではなく、スタート画面のID(#import-json)だけを非表示にする */
+#import-json { display: none; }
+
 .btn-start { padding: 15px 30px; font-size: 1.2rem; }
 
+/* パネルの色・透過・ぼかしの設定 */
 .panel-glass {
-    background: rgba(var(--panel-rgb), var(--user-opacity));
+    background: rgba(var(--panel-rgb), var(--panel-alpha));
+    backdrop-filter: blur(var(--panel-blur));
+    -webkit-backdrop-filter: blur(var(--panel-blur));
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     box-shadow: var(--panel-shadow);
-}
-/* Modernテーマのみ背景ぼかしを有効化 */
-body.theme-modern .panel-glass {
-    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
 }
 
 .theme-text { color: var(--accent-color); }
@@ -173,6 +174,25 @@ body.theme-toyota .w-f-item.active, body.theme-toyota .w-t-item.active { backgro
 .mini-btn { background: rgba(255,255,255,0.2); border: 1px solid var(--border-color); color: var(--text-color); padding: 4px 10px; cursor: pointer; border-radius: 4px; }
 .settings-actions { display: flex; gap: 10px; margin-top: 15px; }
 .settings-actions button { padding: 10px; font-weight: bold; }
+
+/* ファイルアップロードUIのスタイル（設定内） */
+.setting-row input[type="file"] {
+    padding: 5px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+}
+.setting-row input[type="file"]::file-selector-button {
+    background: var(--accent-color);
+    color: #000;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-right: 10px;
+}
 
 /* --- Scrollbar --- */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
