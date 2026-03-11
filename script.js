@@ -1,5 +1,5 @@
 // --- Global State ---
-let allItems = [];
+let allItems =[];
 let folderSettings = [];
 let musicLibrary =[];
 let currentFolderId = null;
@@ -13,7 +13,7 @@ let isPlaying = false;
 let currentPlayingItem = null;
 
 let ytPlayer = null;
-let nicoEndTimer = null;
+let isTransitioning = false; // 連続スキップによるバグ防止用フラグ
 
 // --- DOM Elements ---
 const importScreen = document.getElementById('import-screen');
@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sortSelect.addEventListener('change', handleSortChange);
     nicoCheckbox.addEventListener('change', handleNicoFilterChange);
     setupPlayerControls();
+    
+    // ニコニコ動画のIframeからのメッセージ（再生終了やロード完了など）を受け取る
+    window.addEventListener('message', handleNicoMessage);
 });
 
 // JSONファイルの読み込み
@@ -103,7 +106,7 @@ function buildLibrary() {
     });
 
     itemsToProcess.forEach(item => {
-        const folders = item.folders && item.folders.length > 0 ? item.folders : [item.folder || 'Manual'];
+        const folders = item.folders && item.folders.length > 0 ? item.folders :[item.folder || 'Manual'];
         folders.forEach(fName => {
             if (!folderMap[fName]) folderMap[fName] = [];
             folderMap[fName].push(item);
@@ -172,7 +175,6 @@ function selectFolder(folderId) {
         const isActive = el.dataset.folderId === folderId;
         el.classList.toggle('active', isActive);
         
-        // スマホ表示時、タップしたタブを画面の中央付近にスクロール
         if (isActive && window.innerWidth <= 900) {
             el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
@@ -236,8 +238,6 @@ function updateActiveTrackUI() {
             activeEl.classList.add('active');
             activeEl.querySelector('.w-t-idx').classList.add('hidden');
             activeEl.querySelector('.w-t-playing-icon').classList.remove('hidden');
-            
-            // スクロール時に画面が飛ぶのを防ぐための調整（スマホ用に中央配置）
             activeEl.scrollIntoView({ behavior: 'smooth', block: window.innerWidth <= 900 ? 'center' : 'nearest' });
         }
     }
@@ -279,20 +279,28 @@ function startPlaylist(items, startIndex = 0) {
 }
 
 function playNextVideo() {
-    if (currentPlaylist.length === 0) return;
+    if (currentPlaylist.length === 0 || isTransitioning) return;
+    isTransitioning = true;
+    setTimeout(() => { isTransitioning = false; }, 1000); // 連続発火防止
+    
     currentIndex = (currentIndex + 1) % currentPlaylist.length;
     loadVideo(currentIndex);
 }
 
 function playPrevVideo() {
-    if (currentPlaylist.length === 0) return;
+    if (currentPlaylist.length === 0 || isTransitioning) return;
+    isTransitioning = true;
+    setTimeout(() => { isTransitioning = false; }, 1000); // 連続発火防止
+    
     currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
     loadVideo(currentIndex);
 }
 
 function loadVideo(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
+    
     currentIndex = index;
+    isTransitioning = false; // 強制ロード時はリセット
     const item = currentPlaylist[index];
     
     currentPlayingItem = item;
@@ -301,14 +309,18 @@ function loadVideo(index) {
     updatePlayerUI(item);
     updateActiveTrackUI();
 
-    if (nicoEndTimer) clearTimeout(nicoEndTimer);
-
     const container = document.getElementById('player-container');
 
     if (item.site === 'youtube') {
         const videoId = getYouTubeId(item.url);
         
-        if (!container.querySelector('iframe') || !ytPlayer) {
+        // ニコニコのIframeが残っている等、汚染されている場合はコンテナを掃除する
+        if (container.querySelector('#nico-player') || container.querySelector('iframe')) {
+            container.innerHTML = '<div id="yt-player-mount"></div>';
+            ytPlayer = null; 
+        }
+
+        if (!ytPlayer) {
             container.innerHTML = '<div id="yt-player-mount"></div>';
             createYouTubePlayer(videoId);
         } else {
@@ -320,22 +332,34 @@ function loadVideo(index) {
             }
         }
     } else {
+        // YouTube以外の再生（ニコニコ動画含む）
         if (ytPlayer) { 
-            ytPlayer.destroy(); 
+            try { ytPlayer.destroy(); } catch(e){} 
             ytPlayer = null; 
         }
         
-        let html = '';
+        // 前のDOMを完全に削除
+        container.innerHTML = ''; 
+        
         if (item.site === 'niconico') {
-            const nicoId = item.url.split('/').pop();
-            html = `<iframe src="https://embed.nicovideo.jp/watch/${nicoId}?jsapi=1&autoplay=1" allow="autoplay; fullscreen; encrypted-media" style="width:100%; height:100%; border:none;"></iframe>`;
-            if (item.duration > 0) {
-                nicoEndTimer = setTimeout(playNextVideo, (item.duration * 1000) + 2000);
-            }
+            const nicoId = getNicoId(item.url);
+            
+            // 少し遅延させてIframeを生成する（ブラウザのメモリ解放とエラー防止のため）
+            setTimeout(() => {
+                const iframe = document.createElement('iframe');
+                iframe.id = 'nico-player';
+                // ★重要: エラーを避けるため autoplay=1 は付与せず、APIの準備完了を待つ
+                iframe.src = `https://embed.nicovideo.jp/watch/${nicoId}?jsapi=1&playerId=1`;
+                iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media');
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                container.appendChild(iframe);
+            }, 50);
         } else {
-            html = `<iframe src="${item.url}" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>`;
+            // その他のサイト用フォールバック
+            container.innerHTML = `<iframe src="${item.url}" allowfullscreen allow="autoplay" style="width:100%; height:100%; border:none;"></iframe>`;
         }
-        container.innerHTML = html;
     }
 }
 
@@ -347,6 +371,15 @@ function getYouTubeId(url) {
         const match = url.match(/[?&]v=([^&]+)/);
         if(match) return match[1];
         return url.split('/').pop(); 
+    }
+}
+
+function getNicoId(url) {
+    try {
+        const urlObj = new URL(url);
+        return urlObj.pathname.split('/').pop();
+    } catch(e) {
+        return url.split('?')[0].split('/').pop();
     }
 }
 
@@ -382,7 +415,45 @@ function onPlayerStateChange(event) {
         isPlaying = false;
         updatePlayPauseIcon();
     } else if (event.data === YT.PlayerState.ENDED) {
-        playNextVideo();
+        playNextVideo(); 
+    }
+}
+
+// ★ニコニコ動画からのイベント受信と自動再生の制御
+function handleNicoMessage(e) {
+    if (e.origin !== 'https://embed.nicovideo.jp') return;
+    if (!currentPlayingItem || currentPlayingItem.site !== 'niconico') return;
+    if (!e.data || !e.data.eventName) return;
+
+    const eventName = e.data.eventName;
+
+    if (eventName === 'loadComplete') {
+        // ロード完了時に安全にAPI経由で再生指示を送る
+        const nicoIframe = document.getElementById('nico-player');
+        if (nicoIframe && nicoIframe.contentWindow) {
+            setTimeout(() => {
+                nicoIframe.contentWindow.postMessage({
+                    sourceConnectorType: 1,
+                    playerId: "1",
+                    eventName: "play"
+                }, 'https://embed.nicovideo.jp');
+            }, 150); // 一瞬待つことで再生ブロックエラーを回避
+        }
+    } else if (eventName === 'playerStatusChange') {
+        const status = e.data.data.playerStatus;
+        // 1: 読込中, 2: 再生中, 3: 一時停止, 4: 再生終了
+        if (status === 4) {
+            playNextVideo(); // 再生終了で次の動画へ
+        } else if (status === 2) {
+            isPlaying = true;
+            updatePlayPauseIcon();
+        } else if (status === 3) {
+            isPlaying = false;
+            updatePlayPauseIcon();
+        }
+    } else if (eventName === 'error') {
+        console.warn("Niconico Player Error:", e.data);
+        setTimeout(() => playNextVideo(), 5000); // エラー時は5秒後にスキップ
     }
 }
 
@@ -398,6 +469,15 @@ function togglePlay() {
         } else {
             ytPlayer.pauseVideo();
         }
+    } else if (currentPlayingItem.site === 'niconico') {
+        const nicoIframe = document.getElementById('nico-player');
+        if (nicoIframe && nicoIframe.contentWindow) {
+            nicoIframe.contentWindow.postMessage({
+                sourceConnectorType: 1,
+                playerId: "1",
+                eventName: isPlaying ? "play" : "pause"
+            }, 'https://embed.nicovideo.jp');
+        }
     }
 }
 
@@ -409,7 +489,6 @@ function updatePlayerUI(item) {
     document.getElementById('widget-bg').style.backgroundImage = `url('${thumb}')`;
     updatePlayPauseIcon();
 
-    // ★追加: スマホのロック画面・通知領域からの操作対応 (Media Session API)
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: item.title,
@@ -420,7 +499,6 @@ function updatePlayerUI(item) {
             ]
         });
 
-        // ロック画面等からのイベントリスナー
         navigator.mediaSession.setActionHandler('play', togglePlay);
         navigator.mediaSession.setActionHandler('pause', togglePlay);
         navigator.mediaSession.setActionHandler('previoustrack', playPrevVideo);
@@ -432,7 +510,6 @@ function updatePlayPauseIcon() {
     const icon = document.getElementById('widget-play-icon');
     icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
 
-    // ★追加: Media Session APIの状態も同期する
     if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
     }
