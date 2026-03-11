@@ -47,10 +47,8 @@ function handleFileImport(event) {
     reader.onload = (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            // エクスポート形式の違いに対応
             const mediaItems = Array.isArray(data) ? data : (data.mediaItems ||[]);
             
-            // システムアイテムは除外
             allItems = mediaItems.filter(i => i.site !== 'system');
             folderSettings = data.folderSettings ||[];
             
@@ -72,19 +70,17 @@ function handleFileImport(event) {
     reader.readAsText(file);
 }
 
-// ユーザーアクション（STARTボタン）で自動再生制限を突破
+// STARTボタンで自動再生制限を突破
 function startGame() {
     readyScreen.classList.add('hidden');
     mainApp.classList.remove('hidden');
     
-    // 現在選択されているフォルダの曲からプレイリストを作成して再生
     if (currentFolderId) {
         const folder = musicLibrary.find(f => f.id === currentFolderId);
         const songs = folder ? folder.songs :[];
         if (songs.length > 0) {
             startPlaylist(songs, 0);
         } else {
-            // "すべての動画"などフォールバック
             startPlaylist(musicLibrary.find(f=>f.id==='__all')?.songs ||[], 0);
         }
     }
@@ -124,7 +120,6 @@ function buildLibrary() {
         return a.localeCompare(b, 'ja');
     });
 
-    // 「すべての動画」を作成
     const allFolder = {
         id: '__all',
         name: '📚 すべての動画',
@@ -174,7 +169,13 @@ function selectFolder(folderId) {
     currentFolderId = folderId;
     
     document.querySelectorAll('.w-f-item').forEach(el => {
-        el.classList.toggle('active', el.dataset.folderId === folderId);
+        const isActive = el.dataset.folderId === folderId;
+        el.classList.toggle('active', isActive);
+        
+        // スマホ表示時、タップしたタブを画面の中央付近にスクロール
+        if (isActive && window.innerWidth <= 900) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
     });
 
     const folder = musicLibrary.find(f => f.id === folderId);
@@ -235,8 +236,9 @@ function updateActiveTrackUI() {
             activeEl.classList.add('active');
             activeEl.querySelector('.w-t-idx').classList.add('hidden');
             activeEl.querySelector('.w-t-playing-icon').classList.remove('hidden');
-            // スクロール時に画面が飛ぶのを防ぐための調整
-            activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            // スクロール時に画面が飛ぶのを防ぐための調整（スマホ用に中央配置）
+            activeEl.scrollIntoView({ behavior: 'smooth', block: window.innerWidth <= 900 ? 'center' : 'nearest' });
         }
     }
 }
@@ -288,7 +290,6 @@ function playPrevVideo() {
     loadVideo(currentIndex);
 }
 
-// ★動作確認済みの再生ロジックを組み込み
 function loadVideo(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
     currentIndex = index;
@@ -307,7 +308,6 @@ function loadVideo(index) {
     if (item.site === 'youtube') {
         const videoId = getYouTubeId(item.url);
         
-        // ★重要: iframeがなければマウント用DIVを作ってAPIで生成。あればloadVideoById
         if (!container.querySelector('iframe') || !ytPlayer) {
             container.innerHTML = '<div id="yt-player-mount"></div>';
             createYouTubePlayer(videoId);
@@ -315,13 +315,11 @@ function loadVideo(index) {
             if (typeof ytPlayer.loadVideoById === 'function') {
                 ytPlayer.loadVideoById(videoId);
             } else {
-                // 安全策
                 container.innerHTML = '<div id="yt-player-mount"></div>';
                 createYouTubePlayer(videoId);
             }
         }
     } else {
-        // ニコニコ等他のサイトの場合は、YouTubeプレイヤーを破棄
         if (ytPlayer) { 
             ytPlayer.destroy(); 
             ytPlayer = null; 
@@ -330,10 +328,7 @@ function loadVideo(index) {
         let html = '';
         if (item.site === 'niconico') {
             const nicoId = item.url.split('/').pop();
-            // jsapi=1&autoplay=1 を付与して自動再生を試みる
             html = `<iframe src="https://embed.nicovideo.jp/watch/${nicoId}?jsapi=1&autoplay=1" allow="autoplay; fullscreen; encrypted-media" style="width:100%; height:100%; border:none;"></iframe>`;
-            
-            // 疑似終了タイマー
             if (item.duration > 0) {
                 nicoEndTimer = setTimeout(playNextVideo, (item.duration * 1000) + 2000);
             }
@@ -349,16 +344,13 @@ function getYouTubeId(url) {
         const urlObj = new URL(url);
         return urlObj.searchParams.get('v') || url.split('/').pop();
     } catch(e) { 
-        // URL解析失敗時のフォールバック
         const match = url.match(/[?&]v=([^&]+)/);
         if(match) return match[1];
         return url.split('/').pop(); 
     }
 }
 
-// 動作確認済みのYouTubeプレイヤー生成
 function createYouTubePlayer(videoId) {
-    // window.YT が準備できている前提
     if (typeof YT !== 'undefined' && YT.Player) {
         ytPlayer = new YT.Player('yt-player-mount', {
             height: '100%', 
@@ -373,13 +365,11 @@ function createYouTubePlayer(videoId) {
                 'onStateChange': onPlayerStateChange,
                 'onError': (e) => {
                     console.warn("YouTube Error", e.data);
-                    // エラー時は5秒後に次へ
                     setTimeout(playNextVideo, 5000);
                 }
             }
         });
     } else {
-        // APIロードが間に合わなかった場合の再試行
         setTimeout(() => createYouTubePlayer(videoId), 500);
     }
 }
@@ -409,7 +399,6 @@ function togglePlay() {
             ytPlayer.pauseVideo();
         }
     }
-    // iframe埋め込みのニコニコ動画は外部からのPlay/Pauseが難しいためUIの切り替えのみ
 }
 
 function updatePlayerUI(item) {
@@ -419,9 +408,32 @@ function updatePlayerUI(item) {
     document.getElementById('widget-art').src = thumb;
     document.getElementById('widget-bg').style.backgroundImage = `url('${thumb}')`;
     updatePlayPauseIcon();
+
+    // ★追加: スマホのロック画面・通知領域からの操作対応 (Media Session API)
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: item.title,
+            artist: item.channelName || item.site,
+            artwork:[
+                { src: thumb, sizes: '512x512', type: 'image/jpeg' },
+                { src: thumb, sizes: '256x256', type: 'image/jpeg' }
+            ]
+        });
+
+        // ロック画面等からのイベントリスナー
+        navigator.mediaSession.setActionHandler('play', togglePlay);
+        navigator.mediaSession.setActionHandler('pause', togglePlay);
+        navigator.mediaSession.setActionHandler('previoustrack', playPrevVideo);
+        navigator.mediaSession.setActionHandler('nexttrack', playNextVideo);
+    }
 }
 
 function updatePlayPauseIcon() {
     const icon = document.getElementById('widget-play-icon');
     icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+
+    // ★追加: Media Session APIの状態も同期する
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+    }
 }
