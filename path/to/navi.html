@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -35,27 +34,41 @@
     </div>
 
     <!-- 起動画面群 (Boot Screens) -->
-    <div id="boot-screen" class="overlay-screen hidden" style="z-index: 9998; background:#000;">
-        <!-- MODERN -->
+    <div id="boot-screen" class="overlay-screen hidden" style="z-index: 9998; background:#000; cursor: pointer;">
+        <div class="boot-skip-hint">Click anywhere to skip</div>
+
+        <!-- ② 現代UI風 (MODERN) -->
         <div class="boot-container boot-modern hidden">
-            <i class="fas fa-circle-notch fa-spin fa-4x" style="color:var(--accent-color);"></i>
-            <h3 style="margin-top:20px; color:#fff;">SYSTEM STARTING...</h3>
-        </div>
-        <!-- STANDARD -->
-        <div class="boot-container boot-standard hidden">
-            <h2 style="color:#fff; text-align:left; border-bottom:2px solid var(--accent-color); padding-bottom:10px;">
-                <i class="fas fa-terminal"></i> OS INITIALIZATION
-            </h2>
-            <div style="width:100%; height:10px; background:#333; margin-top:20px;">
-                <div id="boot-std-fill" style="height:100%; width:0%; background:var(--accent-color); transition: width 2.8s linear;"></div>
+            <div class="modern-logo">
+                <i class="fas fa-layer-group"></i> CMS Player
             </div>
-            <p style="text-align:left; color:#888; margin-top:10px; font-family:monospace;">Loading modules...</p>
+            <div class="modern-spinner"></div>
+            <div class="modern-text">Loading Data...</div>
         </div>
-        <!-- NERV -->
-        <div class="boot-container boot-nerv hidden" style="text-align:center;">
-            <h1 style="color:#ff9d00; font-family:serif; font-size:4rem; margin:0; border-bottom:2px solid #ff9d00;">NERV</h1>
-            <p style="color:#ff9d00; font-family:monospace; letter-spacing:2px;">TACTICAL NAVIGATION SYSTEM</p>
-            <p style="color:#ff9d00; font-family:monospace; margin-top:30px; animation: blink 1s infinite;">SYNC RATE: 100%</p>
+
+        <!-- ③ トヨタナビ風 (TOYOTA) -->
+        <div class="boot-container boot-toyota hidden">
+            <div class="toyota-logo toyota-step">CAR MULTIMEDIA SYSTEM</div>
+            <div class="toyota-warning toyota-step hidden-step">
+                <i class="fas fa-exclamation-triangle" style="color:#ffcc00; font-size: 3rem; margin-bottom: 20px;"></i><br>
+                安全のため、走行中の操作はおやめください。<br>実際の交通規制に従って走行してください。
+            </div>
+        </div>
+
+        <!-- ① エヴァ風 (NERV) -->
+        <div class="boot-container boot-nerv hidden">
+            <div class="nerv-scanline"></div>
+            <div class="nerv-top-bar">SYSTEM INITIALIZATION</div>
+            <div class="nerv-center">
+                <h1 class="nerv-title">NERV</h1>
+                <div class="nerv-warning-box">WARNING</div>
+                <div class="nerv-text">TACTICAL NAVIGATION SYSTEM<br><span class="nerv-blink">SYNC RATE: 100%</span></div>
+            </div>
+            <div class="nerv-bottom-log">
+                Loading modules... OK<br>
+                Verifying core systems... OK<br>
+                All systems online.
+            </div>
         </div>
     </div>
 
@@ -120,9 +133,9 @@
             <div class="setting-row">
                 <label>UI Theme</label>
                 <select id="set-theme" class="widget-search">
-                    <option value="modern">Modern Glass</option>
-                    <option value="standard">Standard Solid</option>
-                    <option value="nerv">NERV Tactical</option>
+                    <option value="modern">現代UI風 (Modern)</option>
+                    <option value="nerv">エヴァ風 (NERV)</option>
+                    <option value="toyota">トヨタナビ風 (Car Navi)</option>
                 </select>
             </div>
             
