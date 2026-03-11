@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CMS Web Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- YouTube APIをあらかじめ読み込んでおく -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+</head>
+<body>
+
+    <!-- ファイルインポート画面 -->
+    <div id="import-screen" class="overlay-screen">
+        <div class="start-content panel-glass">
+            <h1 style="color: var(--accent-color); margin-top:0;">CMS Web Player</h1>
+            <p>拡張機能からエクスポートした<br>JSONファイルを読み込んでください。</p>
+            <label for="import-json" class="custom-file-upload">
+                <i class="fas fa-file-import"></i> ファイルを選択
+            </label>
+            <input type="file" id="import-json" accept=".json">
+        </div>
+    </div>
+
+    <!-- 再生準備完了（自動再生ブロック回避用）画面 -->
+    <div id="ready-screen" class="overlay-screen hidden">
+        <div class="start-content panel-glass" style="text-align: center;">
+            <h2 style="margin-top:0;">Ready</h2>
+            <p>データの読み込みが完了しました。<br>再生を開始します。</p>
+            <button class="btn-start" id="btn-user-start">
+                <i class="fas fa-play"></i> PLAY START
+            </button>
+        </div>
+    </div>
+
+    <!-- メインプレイヤーUI -->
+    <div id="main-app" class="hidden">
+        <div class="widget-bg" id="widget-bg"></div>
+        <div class="widget-container">
+            <!-- 左列 (Player & Controls) -->
+            <div class="widget-col-left">
+                <div id="player-wrapper" class="panel-glass">
+                    <div id="player-container">
+                        <!-- ここに動的に iframe が挿入されます -->
+                    </div>
+                </div>
+
+                <div class="widget-player panel-glass">
+                    <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art">
+                    <div class="widget-info">
+                       <h2 id="widget-title">Not Playing</h2>
+                        <p id="widget-artist">---</p>
+                    </div>
+                    <div class="widget-controls">
+                        <button id="widget-btn-prev" title="前の動画"><i class="fas fa-backward-step"></i></button>
+                        <button id="widget-btn-play" class="play-btn" title="再生/一時停止"><i class="fas fa-play" id="widget-play-icon"></i></button>
+                        <button id="widget-btn-next" title="次の動画"><i class="fas fa-forward-step"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右列 (Library) -->
+            <div class="widget-col-right panel-glass">
+                <div class="widget-nav">
+                    <h3 class="library-title">Library</h3>
+                    <div class="controls-wrapper">
+                        <label class="filter-option" style="cursor: pointer;">
+                            <input type="checkbox" id="exclude-nico"> ニコニコ動画を除外
+                        </label>
+                        <select id="widget-sort-select" class="widget-search">
+                            <option value="custom">🔢 カスタム順</option>
+                            <option value="title_asc">🔤 名前 (A-Z)</option>
+                            <option value="title_desc">🔤 名前 (Z-A)</option>
+                            <option value="newest">📅 新しい順</option>
+                            <option value="oldest">📅 古い順</option>
+                            <option value="playCount_desc">▶ 再生数順</option>
+                        </select>
+                        <input type="text" id="widget-search-box" class="widget-search" placeholder="Search...">
+                    </div>
+                </div>
+                <div class="library-content">
+                    <div class="w-folder-list" id="widget-folder-list"></div>
+                    <div class="w-track-list" id="widget-track-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
