@@ -10,15 +10,15 @@ const defaultSettings = {
     musicMode: false,
     showClock: true,
     showThumbnails: true,
+    mobileOptimizedUI: false,  // 操作性UP（スマホ風UI）のフラグ
     customColorEnabled: false,
     customAccentColor: '#00aaff',
     customBorderColor: '#ffffff'
 };
 let appSettings = { ...defaultSettings };
 
-// グローバル状態
 let allItems = [];
-let folderSettings = [];
+let folderSettings =[];
 let musicLibrary =[];
 let currentFolderId = null;
 let currentSortOrder = 'custom';
@@ -33,13 +33,11 @@ let currentPlayingItem = null;
 let ytPlayer = null;
 let isTransitioning = false;
 
-// タイマー関連（重さ軽減、UI更新用）
 let bootTimeoutId;
 let toyotaStepTimeoutId;
 let resizeTimer;       
 let progressInterval;  
 
-// DOM要素
 const importScreen = document.getElementById('import-screen');
 const readyScreen = document.getElementById('ready-screen');
 const bootScreen = document.getElementById('boot-screen');
@@ -61,40 +59,40 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     applyThemeSettings();
 
-    // 時計の更新開始
     updateClock();
     setInterval(updateClock, 1000);
-
-    // IFrame Player API (YouTube) の動的読み込み
     loadYouTubeAPI();
 
-    // リサイズ時はみ出し(マーキー)再計算 (デバウンス処理で軽くする)
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(scheduleMarqueeUpdate, 200);
     });
 
-    // 各種イベントリスナー登録
     importJsonInput.addEventListener('change', handleFileImport);
     btnUserStart.addEventListener('click', startGame);
     searchBox.addEventListener('input', handleSearch);
     sortSelect.addEventListener('change', handleSortChange);
     nicoCheckbox.addEventListener('change', handleNicoFilterChange);
     
-    // 全画面表示・プログレスバー操作
     document.getElementById('widget-btn-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('progress-container').addEventListener('click', handleProgressClick);
 
+    // スマホ用フォルダモーダル開閉
+    document.getElementById('btn-open-mobile-folder').addEventListener('click', () => {
+        document.getElementById('mobile-folder-modal').classList.remove('hidden');
+    });
+    document.getElementById('btn-close-folder-modal').addEventListener('click', () => {
+        document.getElementById('mobile-folder-modal').classList.add('hidden');
+    });
+
     setupPlayerControls();
     setupSettingsModal();
-    
-    // Niconico Playerからのメッセージ受信用
     window.addEventListener('message', handleNicoMessage);
 });
 
 
 // ============================================
-// 3. 外部APIの読み込み処理
+// 3. API読み込みと設定管理
 // ============================================
 function loadYouTubeAPI() {
     if (!window.YT) {
@@ -105,10 +103,6 @@ function loadYouTubeAPI() {
     }
 }
 
-
-// ============================================
-// 4. 設定管理とUI適用
-// ============================================
 function loadSettings() {
     try {
         const saved = localStorage.getItem('cms_player_settings_v3');
@@ -126,24 +120,25 @@ function applyThemeSettings() {
     document.body.classList.toggle('music-mode', appSettings.musicMode);
     document.body.classList.toggle('show-list-thumbnails', appSettings.showThumbnails);
     document.body.classList.toggle('show-clock', appSettings.showClock);
+    document.body.classList.toggle('mobile-optimized', appSettings.mobileOptimizedUI);
     
-    // 背景画像の設定
+    // 背景画像
     if (appSettings.bgImage) {
         document.documentElement.style.setProperty('--bg-image', `url(${appSettings.bgImage})`);
     } else {
         document.documentElement.style.setProperty('--bg-image', 'none');
     }
     
-    // カスタムカラーの上書き
+    // カスタムカラー (確実にテーマを上書きするためdocument.body.styleに適用)
     if (appSettings.customColorEnabled) {
-        document.documentElement.style.setProperty('--accent-color', appSettings.customAccentColor);
-        document.documentElement.style.setProperty('--border-color', appSettings.customBorderColor);
+        document.body.style.setProperty('--accent-color', appSettings.customAccentColor);
+        document.body.style.setProperty('--border-color', appSettings.customBorderColor);
     } else {
-        document.documentElement.style.removeProperty('--accent-color');
-        document.documentElement.style.removeProperty('--border-color');
+        document.body.style.removeProperty('--accent-color');
+        document.body.style.removeProperty('--border-color');
     }
 
-    // 透明度とぼかしの連動
+    // 透明度・ぼかし
     const op = parseFloat(appSettings.bgOpacity);
     document.documentElement.style.setProperty('--panel-alpha', op);
     document.documentElement.style.setProperty('--panel-blur', `${op * 20}px`);
@@ -155,16 +150,11 @@ function resizeAndSaveImage(file, callback) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 1920; const MAX_HEIGHT = 1080;
             let width = img.width; let height = img.height;
-            if (width > height) {
-                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-            } else {
-                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-            }
+            if (width > height) { if (width > 1920) { height *= 1920 / width; width = 1920; } } 
+            else { if (height > 1080) { width *= 1080 / height; height = 1080; } }
             canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
             callback(canvas.toDataURL('image/jpeg', 0.6));
         }
         img.src = e.target.result;
@@ -179,6 +169,7 @@ function setupSettingsModal() {
         document.getElementById('set-theme').value = appSettings.theme;
         document.getElementById('set-opacity').value = appSettings.bgOpacity;
         document.getElementById('op-val').textContent = appSettings.bgOpacity;
+        document.getElementById('set-mobile-ui').checked = appSettings.mobileOptimizedUI;
         document.getElementById('set-music-mode').checked = appSettings.musicMode;
         document.getElementById('set-show-clock').checked = appSettings.showClock;
         document.getElementById('set-show-thumbnails').checked = appSettings.showThumbnails;
@@ -191,14 +182,13 @@ function setupSettingsModal() {
     document.getElementById('set-opacity').oninput = (e) => {
         const val = e.target.value;
         document.getElementById('op-val').textContent = val;
-        // プレビューとしてリアルタイムに適用
         document.documentElement.style.setProperty('--panel-alpha', val);
         document.documentElement.style.setProperty('--panel-blur', `${val * 20}px`);
     };
 
     document.getElementById('btn-close-settings').onclick = () => {
         modal.classList.add('hidden');
-        applyThemeSettings(); // キャンセル時は元の設定に戻す
+        applyThemeSettings(); 
     };
 
     document.getElementById('btn-reset-settings').onclick = () => {
@@ -210,25 +200,20 @@ function setupSettingsModal() {
 
     document.getElementById('set-bg-img').onchange = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-        resizeAndSaveImage(file, (base64) => {
-            appSettings.bgImage = base64;
-            applyThemeSettings();
-        });
+        if (file) resizeAndSaveImage(file, (base64) => { appSettings.bgImage = base64; applyThemeSettings(); });
     };
-    
     document.getElementById('btn-clear-bg').onclick = () => {
         appSettings.bgImage = ''; document.getElementById('set-bg-img').value = ''; applyThemeSettings();
     };
 
     document.getElementById('set-boot-sound').onchange = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-        const r = new FileReader();
-        r.onload = (ev) => appSettings.bootSound = ev.target.result;
-        r.readAsDataURL(file);
+        if (file) {
+            const r = new FileReader();
+            r.onload = (ev) => appSettings.bootSound = ev.target.result;
+            r.readAsDataURL(file);
+        }
     };
-    
     document.getElementById('btn-clear-sound').onclick = () => {
         appSettings.bootSound = ''; document.getElementById('set-boot-sound').value = '';
     };
@@ -236,6 +221,7 @@ function setupSettingsModal() {
     document.getElementById('btn-save-settings').onclick = () => {
         appSettings.theme = document.getElementById('set-theme').value;
         appSettings.bgOpacity = document.getElementById('set-opacity').value;
+        appSettings.mobileOptimizedUI = document.getElementById('set-mobile-ui').checked;
         appSettings.musicMode = document.getElementById('set-music-mode').checked;
         appSettings.showClock = document.getElementById('set-show-clock').checked;
         appSettings.showThumbnails = document.getElementById('set-show-thumbnails').checked;
@@ -253,7 +239,7 @@ function setupSettingsModal() {
 
 
 // ============================================
-// 5. 時計とマーキー（文字はみ出し）機能
+// 4. UI機能 (時計・マーキー)
 // ============================================
 function updateClock() {
     if (!appSettings.showClock) return;
@@ -269,8 +255,6 @@ function updateMarquee() {
             if (!content) return;
             const wrapperWidth = wrapper.clientWidth;
             const contentWidth = content.scrollWidth;
-            
-            // 幅が親(表示領域)より大きければアニメーションクラスを付与
             if (contentWidth > wrapperWidth + 2) {
                 wrapper.style.setProperty('--parent-width', `${wrapperWidth}px`);
                 content.classList.add('is-marquee');
@@ -287,7 +271,7 @@ function scheduleMarqueeUpdate() {
 
 
 // ============================================
-// 6. 起動シーケンスとデータ読み込み
+// 5. データ読み込みとライブラリ構築
 // ============================================
 function handleFileImport(event) {
     const file = event.target.files[0];
@@ -309,9 +293,7 @@ function handleFileImport(event) {
             } else {
                 alert('動画データがありません。');
             }
-        } catch (error) { 
-            alert('JSONの解析に失敗しました。'); 
-        }
+        } catch (error) { alert('JSONの解析に失敗しました。'); }
     };
     reader.readAsText(file);
 }
@@ -324,29 +306,23 @@ function startGame() {
     const activeBoot = document.querySelector(`.boot-${appSettings.theme}`);
     if (activeBoot) activeBoot.classList.remove('hidden');
 
-    // 起動音再生
     if (appSettings.bootSound) {
         const audio = new Audio(appSettings.bootSound);
-        audio.volume = 0.5; audio.play().catch(e => console.warn("Boot Sound Play Error:", e));
+        audio.volume = 0.5; audio.play().catch(e=>{});
     }
 
-    // トヨタナビ用ステップアニメーション
     if (appSettings.theme === 'toyota') {
         const logo = activeBoot.querySelector('.toyota-logo');
         const warning = activeBoot.querySelector('.toyota-warning');
         logo.classList.remove('hidden-step');
         warning.classList.add('hidden-step');
-        
         toyotaStepTimeoutId = setTimeout(() => {
             logo.classList.add('hidden-step');
             warning.classList.remove('hidden-step');
         }, 1500);
     }
 
-    // スキップイベント
     bootScreen.onclick = endBootSequence;
-
-    // 4秒で自動遷移
     bootTimeoutId = setTimeout(endBootSequence, 4000);
 }
 
@@ -354,12 +330,10 @@ function endBootSequence() {
     clearTimeout(bootTimeoutId);
     clearTimeout(toyotaStepTimeoutId);
     bootScreen.onclick = null; 
-
     bootScreen.classList.add('hidden');
     mainApp.classList.remove('hidden');
     
     scheduleMarqueeUpdate(); 
-    
     if (currentFolderId) {
         const folder = musicLibrary.find(f => f.id === currentFolderId);
         const songs = folder ? folder.songs :[];
@@ -368,10 +342,6 @@ function endBootSequence() {
     }
 }
 
-
-// ============================================
-// 7. ライブラリ構築とレンダリング
-// ============================================
 function buildLibrary() {
     let folderMap = {};
     const itemsToProcess = allItems.filter(item => {
@@ -404,7 +374,7 @@ function buildLibrary() {
     });
 
     musicLibrary =[
-        { id: '__all', name: '📚 すべての動画', songs: sortSongs(itemsToProcess) },
+        { id: '__all', name: '📚 All', songs: sortSongs(itemsToProcess) },
         ...folderNames.map(name => ({ id: name, name: `📁 ${name}`, songs: sortSongs(folderMap[name]) }))
     ];
 }
@@ -424,28 +394,71 @@ function sortSongs(songs) {
     });
 }
 
+
+// ============================================
+// 6. フォルダ・リスト描画
+// ============================================
 function renderFolders() {
     folderListEl.innerHTML = '';
+    const mobileModalListEl = document.getElementById('mobile-folder-list-modal');
+    if (mobileModalListEl) mobileModalListEl.innerHTML = '';
+
     musicLibrary.forEach(folder => {
+        // PC / タブレット用横・縦リスト
         const div = document.createElement('div');
         div.className = 'w-f-item'; 
         div.textContent = folder.name; 
         div.dataset.folderId = folder.id;
         div.onclick = () => selectFolder(folder.id);
         folderListEl.appendChild(div);
+
+        // モバイル特化用モーダルリスト
+        if (mobileModalListEl) {
+            const mDiv = document.createElement('div');
+            mDiv.className = 'm-f-item';
+            mDiv.dataset.folderId = folder.id;
+            mDiv.innerHTML = `<span>${folder.name.replace('📁 ', '').replace('📚 ', '')}</span> <i class="fas fa-music" style="color:var(--sub-text-color); font-size:0.9rem;"></i>`;
+            mDiv.onclick = () => {
+                selectFolder(folder.id);
+                document.getElementById('mobile-folder-modal').classList.add('hidden');
+            };
+            mobileModalListEl.appendChild(mDiv);
+        }
     });
 }
 
 function selectFolder(folderId) {
     currentFolderId = folderId;
+    
+    // PC用リストのハイライト
     document.querySelectorAll('.w-f-item').forEach(el => {
         const isActive = el.dataset.folderId === folderId;
         el.classList.toggle('active', isActive);
-        if (isActive && window.innerWidth <= 900) {
+        if (isActive && window.innerWidth <= 900 && !appSettings.mobileOptimizedUI) {
             el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
     });
+
+    // モバイル用モーダルリストのハイライト
+    document.querySelectorAll('.m-f-item').forEach(el => {
+        const isActive = el.dataset.folderId === folderId;
+        el.classList.toggle('active', isActive);
+        const text = el.textContent.trim();
+        if (isActive) {
+            el.innerHTML = `<span><i class="fas fa-check" style="margin-right:8px;"></i>${text}</span> <i class="fas fa-music"></i>`;
+        } else {
+            el.innerHTML = `<span>${text}</span> <i class="fas fa-music" style="color:var(--sub-text-color); font-size:0.9rem;"></i>`;
+        }
+    });
+
     const folder = musicLibrary.find(f => f.id === folderId);
+    
+    // スマホ用現在フォルダ表示の更新
+    if (folder) {
+        document.getElementById('current-folder-name').textContent = folder.name.replace('📁 ', '').replace('📚 ', '');
+        document.getElementById('current-folder-count').textContent = `${folder.songs.length}件のアイテム`;
+    }
+
     renderTracks(folder ? folder.songs :[]);
 }
 
@@ -506,38 +519,24 @@ function updateActiveTrackUI() {
             activeEl.classList.add('active');
             activeEl.querySelector('.w-t-idx').classList.add('hidden');
             activeEl.querySelector('.w-t-playing-icon').classList.remove('hidden');
-            activeEl.scrollIntoView({ behavior: 'smooth', block: window.innerWidth <= 900 ? 'center' : 'nearest' });
+            activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }
 }
 
-
-// ============================================
-// 8. 検索・フィルタハンドラ
-// ============================================
 function handleSearch(e) { 
-    currentSearchQuery = e.target.value; 
-    buildLibrary(); 
-    renderFolders(); 
-    selectFolder(currentFolderId || musicLibrary[0]?.id); 
+    currentSearchQuery = e.target.value; buildLibrary(); renderFolders(); selectFolder(currentFolderId || musicLibrary[0]?.id); 
 }
-
 function handleSortChange(e) { 
-    currentSortOrder = e.target.value; 
-    buildLibrary(); 
-    selectFolder(currentFolderId || musicLibrary[0]?.id); 
+    currentSortOrder = e.target.value; buildLibrary(); selectFolder(currentFolderId || musicLibrary[0]?.id); 
 }
-
 function handleNicoFilterChange(e) { 
-    excludeNico = e.target.checked; 
-    buildLibrary(); 
-    renderFolders(); 
-    selectFolder(currentFolderId || musicLibrary[0]?.id); 
+    excludeNico = e.target.checked; buildLibrary(); renderFolders(); selectFolder(currentFolderId || musicLibrary[0]?.id); 
 }
 
 
 // ============================================
-// 9. プレイヤー操作関連 (全画面・プログレスなど)
+// 7. 再生機能とプログレスバー操作
 // ============================================
 function setupPlayerControls() {
     document.getElementById('widget-btn-play').onclick = togglePlay;
@@ -547,13 +546,9 @@ function setupPlayerControls() {
 
 function toggleFullscreen() {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.error(`全画面表示エラー: ${err.message}`);
-        });
+        document.documentElement.requestFullscreen().catch(err => {});
     } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
+        if (document.exitFullscreen) document.exitFullscreen();
     }
 }
 
@@ -568,21 +563,14 @@ function stopProgressTimer() {
 
 function updateProgress() {
     if (!isPlaying) return;
-    
-    let current = 0;
-    let duration = 0;
-
-    // YouTubeのみAPIで時間を取得
+    let current = 0; let duration = 0;
     if (currentPlayingItem && currentPlayingItem.site === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
         current = ytPlayer.getCurrentTime();
         duration = ytPlayer.getDuration();
-    } else {
-        return; // Niconicoは時間取得が難しいためバーは初期状態のまま
-    }
+    } else return;
 
     if (duration > 0) {
-        const percent = (current / duration) * 100;
-        document.getElementById('progress-bar').style.width = `${percent}%`;
+        document.getElementById('progress-bar').style.width = `${(current / duration) * 100}%`;
         document.getElementById('time-current').textContent = formatTime(current);
         document.getElementById('time-duration').textContent = formatTime(duration);
     }
@@ -597,149 +585,95 @@ function formatTime(seconds) {
 
 function handleProgressClick(e) {
     if (!currentPlayingItem || currentPlayingItem.site !== 'youtube' || !ytPlayer || typeof ytPlayer.getDuration !== 'function') return;
-    
     const rect = e.target.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
     const duration = ytPlayer.getDuration();
-    
-    if (duration > 0) {
-        ytPlayer.seekTo(duration * pos, true);
-        updateProgress();
-    }
+    if (duration > 0) { ytPlayer.seekTo(duration * pos, true); updateProgress(); }
 }
 
-
-// ============================================
-// 10. 再生ロジック (YouTube / Niconico)
-// ============================================
 function startPlaylist(items, startIndex = 0) {
     if (items.length === 0) return;
-    currentPlaylist = items; 
-    currentIndex = startIndex; 
-    loadVideo(currentIndex);
+    currentPlaylist = items; currentIndex = startIndex; loadVideo(currentIndex);
 }
 
 function playNextVideo() {
     if (currentPlaylist.length === 0 || isTransitioning) return;
-    isTransitioning = true; 
-    setTimeout(() => { isTransitioning = false; }, 1000);
+    isTransitioning = true; setTimeout(() => { isTransitioning = false; }, 1000);
     currentIndex = (currentIndex + 1) % currentPlaylist.length;
     loadVideo(currentIndex);
 }
 
 function playPrevVideo() {
     if (currentPlaylist.length === 0 || isTransitioning) return;
-    isTransitioning = true; 
-    setTimeout(() => { isTransitioning = false; }, 1000);
+    isTransitioning = true; setTimeout(() => { isTransitioning = false; }, 1000);
     currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
     loadVideo(currentIndex);
 }
 
 function getYouTubeId(url) {
-    try { 
-        const urlObj = new URL(url); 
-        return urlObj.searchParams.get('v') || url.split('/').pop(); 
-    } catch(e) { 
-        const match = url.match(/[?&]v=([^&]+)/); 
-        if(match) return match[1]; 
-        return url.split('/').pop(); 
-    }
+    try { const urlObj = new URL(url); return urlObj.searchParams.get('v') || url.split('/').pop(); } 
+    catch(e) { const match = url.match(/[?&]v=([^&]+)/); if(match) return match[1]; return url.split('/').pop(); }
 }
 
 function getNicoId(url) {
-    try { 
-        const urlObj = new URL(url); 
-        return urlObj.pathname.split('/').pop(); 
-    } catch(e) { 
-        return url.split('?')[0].split('/').pop(); 
-    }
+    try { const urlObj = new URL(url); return urlObj.pathname.split('/').pop(); } 
+    catch(e) { return url.split('?')[0].split('/').pop(); }
 }
 
 function createYouTubePlayer(videoId) {
-    // APIの準備ができていればプレイヤーを構築
     if (window.YT && window.YT.Player) {
         ytPlayer = new YT.Player('yt-player-mount', {
             height: '100%', width: '100%', videoId: videoId,
             playerVars: { 'playsinline': 1, 'autoplay': 1, 'rel': 0 },
             events: { 
-                'onReady': () => { 
-                    isPlaying = true; 
-                    updatePlayPauseIcon();
-                    startProgressTimer(); 
-                },
+                'onReady': () => { isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); },
                 'onStateChange': onPlayerStateChange,
-                'onError': (e) => { setTimeout(playNextVideo, 5000); }
+                'onError': () => { setTimeout(playNextVideo, 5000); }
             }
         });
-    } else {
-        // まだロードされていない場合は少し待機 (無限ループを回避するため再帰は遅延させる)
-        setTimeout(() => createYouTubePlayer(videoId), 1000);
-    }
+    } else setTimeout(() => createYouTubePlayer(videoId), 1000);
 }
 
 function onPlayerStateChange(event) {
     if (event.data === YT.PlayerState.PLAYING) { 
-        isPlaying = true; 
-        updatePlayPauseIcon(); 
-        startProgressTimer();
+        isPlaying = true; updatePlayPauseIcon(); startProgressTimer();
     } else if (event.data === YT.PlayerState.PAUSED) { 
-        isPlaying = false; 
-        updatePlayPauseIcon(); 
-        stopProgressTimer();
+        isPlaying = false; updatePlayPauseIcon(); stopProgressTimer();
     } else if (event.data === YT.PlayerState.ENDED) {
-        stopProgressTimer();
-        document.getElementById('progress-bar').style.width = '0%';
-        playNextVideo(); 
+        stopProgressTimer(); document.getElementById('progress-bar').style.width = '0%'; playNextVideo(); 
     }
 }
 
 function loadVideo(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
-    currentIndex = index; 
-    isTransitioning = false;
+    currentIndex = index; isTransitioning = false;
+    currentPlayingItem = currentPlaylist[index]; isPlaying = true;
     
-    const item = currentPlaylist[index];
-    currentPlayingItem = item; 
-    isPlaying = true;
-    
-    updatePlayerUI(item);
+    updatePlayerUI(currentPlayingItem);
     updateActiveTrackUI();
 
-    // プログレスバーの初期化
     document.getElementById('progress-bar').style.width = '0%';
     document.getElementById('time-current').textContent = '0:00';
     document.getElementById('time-duration').textContent = '0:00';
     stopProgressTimer();
 
     const container = document.getElementById('player-container');
-
-    if (item.site === 'youtube') {
-        const videoId = getYouTubeId(item.url);
+    if (currentPlayingItem.site === 'youtube') {
+        const videoId = getYouTubeId(currentPlayingItem.url);
         if (container.querySelector('#nico-player') || container.querySelector('iframe')) {
-            container.innerHTML = '<div id="yt-player-mount"></div>'; 
-            ytPlayer = null; 
+            container.innerHTML = '<div id="yt-player-mount"></div>'; ytPlayer = null; 
         }
         if (!ytPlayer) {
-            container.innerHTML = '<div id="yt-player-mount"></div>'; 
-            createYouTubePlayer(videoId);
+            container.innerHTML = '<div id="yt-player-mount"></div>'; createYouTubePlayer(videoId);
         } else {
-            if (typeof ytPlayer.loadVideoById === 'function') {
-                ytPlayer.loadVideoById(videoId);
-            } else { 
-                container.innerHTML = '<div id="yt-player-mount"></div>'; 
-                createYouTubePlayer(videoId); 
-            }
+            if (typeof ytPlayer.loadVideoById === 'function') ytPlayer.loadVideoById(videoId);
+            else { container.innerHTML = '<div id="yt-player-mount"></div>'; createYouTubePlayer(videoId); }
         }
     } else {
-        // Niconicoなどの場合、YouTubeプレイヤーを破棄
-        if (ytPlayer) { 
-            try { ytPlayer.destroy(); } catch(e){} 
-            ytPlayer = null; 
-        }
+        if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
         container.innerHTML = ''; 
-        
-        if (item.site === 'niconico') {
-            const nicoId = getNicoId(item.url);
+        if (currentPlayingItem.site === 'niconico') {
+            const nicoId = getNicoId(currentPlayingItem.url);
             setTimeout(() => {
                 const iframe = document.createElement('iframe');
                 iframe.id = 'nico-player';
@@ -749,7 +683,7 @@ function loadVideo(index) {
                 container.appendChild(iframe);
             }, 50);
         } else {
-            container.innerHTML = `<iframe src="${item.url}" allowfullscreen allow="autoplay" style="width:100%; height:100%; border:none;"></iframe>`;
+            container.innerHTML = `<iframe src="${currentPlayingItem.url}" allowfullscreen allow="autoplay" style="width:100%; height:100%; border:none;"></iframe>`;
         }
     }
 }
@@ -757,46 +691,30 @@ function loadVideo(index) {
 function handleNicoMessage(e) {
     if (e.origin !== 'https://embed.nicovideo.jp' || !currentPlayingItem || currentPlayingItem.site !== 'niconico' || !e.data || !e.data.eventName) return;
     const eventName = e.data.eventName;
-    
     if (eventName === 'loadComplete') {
         const nicoIframe = document.getElementById('nico-player');
         if (nicoIframe && nicoIframe.contentWindow) {
-            setTimeout(() => { 
-                nicoIframe.contentWindow.postMessage({ sourceConnectorType: 1, playerId: "1", eventName: "play" }, 'https://embed.nicovideo.jp'); 
-            }, 150);
+            setTimeout(() => { nicoIframe.contentWindow.postMessage({ sourceConnectorType: 1, playerId: "1", eventName: "play" }, 'https://embed.nicovideo.jp'); }, 150);
         }
     } else if (eventName === 'playerStatusChange') {
         const status = e.data.data.playerStatus;
-        if (status === 4) { // 4: ENDED
-            playNextVideo(); 
-        } else if (status === 2) { // 2: PLAYING
-            isPlaying = true; updatePlayPauseIcon(); 
-        } else if (status === 3) { // 3: PAUSED
-            isPlaying = false; updatePlayPauseIcon(); 
-        }
-    } else if (eventName === 'error') {
-        setTimeout(() => playNextVideo(), 5000);
-    }
+        if (status === 4) playNextVideo(); 
+        else if (status === 2) { isPlaying = true; updatePlayPauseIcon(); } 
+        else if (status === 3) { isPlaying = false; updatePlayPauseIcon(); }
+    } else if (eventName === 'error') setTimeout(() => playNextVideo(), 5000);
 }
 
 function togglePlay() {
     if (!currentPlayingItem) return;
-    isPlaying = !isPlaying; 
-    updatePlayPauseIcon();
+    isPlaying = !isPlaying; updatePlayPauseIcon();
     
-    if (isPlaying) {
-        startProgressTimer();
-    } else {
-        stopProgressTimer();
-    }
+    if (isPlaying) startProgressTimer(); else stopProgressTimer();
     
     if (currentPlayingItem.site === 'youtube' && ytPlayer && typeof ytPlayer.playVideo === 'function') {
         if (isPlaying) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
     } else if (currentPlayingItem.site === 'niconico') {
         const nicoIframe = document.getElementById('nico-player');
-        if (nicoIframe && nicoIframe.contentWindow) {
-            nicoIframe.contentWindow.postMessage({ sourceConnectorType: 1, playerId: "1", eventName: isPlaying ? "play" : "pause" }, 'https://embed.nicovideo.jp');
-        }
+        if (nicoIframe && nicoIframe.contentWindow) nicoIframe.contentWindow.postMessage({ sourceConnectorType: 1, playerId: "1", eventName: isPlaying ? "play" : "pause" }, 'https://embed.nicovideo.jp');
     }
 }
 
@@ -809,7 +727,6 @@ function updatePlayerUI(item) {
     updatePlayPauseIcon();
     scheduleMarqueeUpdate(); 
 
-    // OSのメディアコントローラー(通知領域など)と連携
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
             title: item.title, artist: item.channelName || item.site,
@@ -825,7 +742,5 @@ function updatePlayerUI(item) {
 function updatePlayPauseIcon() {
     const icon = document.getElementById('widget-play-icon');
     icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
-    if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
-    }
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
 }
