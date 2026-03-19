@@ -104,21 +104,39 @@
 
             <!-- 操作パネルとプレイヤー情報 -->
             <div id="player-controls-wrapper" class="panel-glass widget-player">
-                <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art">
-                <div class="widget-info overflow-hidden">
-                    <div class="marquee-wrapper">
-                        <h2 id="widget-title" class="theme-text marquee-content">Not Playing</h2>
-                    </div>
-                    <div class="marquee-wrapper">
-                        <p id="widget-artist" class="marquee-content">---</p>
+                
+                <div class="player-controls-inner">
+                    <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art">
+                    
+                    <div class="widget-info-container">
+                        <div class="widget-info overflow-hidden">
+                            <div class="marquee-wrapper">
+                                <h2 id="widget-title" class="theme-text marquee-content">Not Playing</h2>
+                            </div>
+                            <div class="marquee-wrapper">
+                                <p id="widget-artist" class="marquee-content">---</p>
+                            </div>
+                        </div>
+
+                        <!-- 再生プログレスバー -->
+                        <div class="progress-area">
+                            <span id="time-current" class="time-text">0:00</span>
+                            <div class="progress-container" id="progress-container">
+                                <div class="progress-bar" id="progress-bar"></div>
+                            </div>
+                            <span id="time-duration" class="time-text">0:00</span>
+                        </div>
+                        
+                        <div class="widget-controls">
+                            <button id="widget-btn-prev" title="前の動画"><i class="fas fa-backward-step"></i></button>
+                            <button id="widget-btn-play" class="play-btn theme-btn" title="再生/一時停止"><i class="fas fa-play" id="widget-play-icon"></i></button>
+                            <button id="widget-btn-next" title="次の動画"><i class="fas fa-forward-step"></i></button>
+                            <button id="widget-btn-fullscreen" title="全画面表示"><i class="fas fa-expand"></i></button>
+                            <button id="btn-open-settings" title="設定" style="margin-left:auto;"><i class="fas fa-cog"></i></button>
+                        </div>
                     </div>
                 </div>
-                <div class="widget-controls">
-                    <button id="widget-btn-prev" title="前の動画"><i class="fas fa-backward-step"></i></button>
-                    <button id="widget-btn-play" class="play-btn theme-btn" title="再生/一時停止"><i class="fas fa-play" id="widget-play-icon"></i></button>
-                    <button id="widget-btn-next" title="次の動画"><i class="fas fa-forward-step"></i></button>
-                    <button id="btn-open-settings" title="設定" style="margin-left:auto;"><i class="fas fa-cog"></i></button>
-                </div>
+
             </div>
 
             <!-- フォルダリスト -->
@@ -141,41 +159,56 @@
                 <i class="fas fa-cog"></i> System Settings
             </h2>
             
-            <div class="setting-row">
-                <label>UI Theme</label>
-                <select id="set-theme" class="widget-search">
-                    <option value="modern">現代UI風 (Modern)</option>
-                    <option value="nerv">エヴァ風 (NERV)</option>
-                    <option value="toyota">トヨタナビ風 (Car Navi)</option>
-                </select>
-            </div>
-            
-            <div class="setting-row">
-                <label>Background Image</label>
-                <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
-                <button id="btn-clear-bg" class="mini-btn">Clear</button>
-            </div>
+            <div class="setting-scroll-area">
+                <div class="setting-row">
+                    <label>UI Theme</label>
+                    <select id="set-theme" class="widget-search">
+                        <option value="modern">現代UI風 (Modern)</option>
+                        <option value="nerv">エヴァ風 (NERV)</option>
+                        <option value="toyota">トヨタナビ風 (Car Navi)</option>
+                    </select>
+                </div>
+                
+                <div class="setting-row" style="margin-top: 10px;">
+                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする</label>
+                </div>
+                <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
+                    <div style="flex:1;">
+                        <label>文字・アイコン色</label>
+                        <input type="color" id="set-accent-color" value="#00aaff" style="width:100%; height:30px; cursor:pointer;">
+                    </div>
+                    <div style="flex:1;">
+                        <label>枠線の色</label>
+                        <input type="color" id="set-border-color" value="#ffffff" style="width:100%; height:30px; cursor:pointer;">
+                    </div>
+                </div>
 
-            <div class="setting-row">
-                <label>Panel Opacity & Blur: <span id="op-val">0.5</span></label>
-                <!-- 0で完全透明(ぼかし無)、1で不透明(最大ぼかし) -->
-                <input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5">
-            </div>
+                <div class="setting-row" style="margin-top: 10px;">
+                    <label>Background Image</label>
+                    <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
+                    <button id="btn-clear-bg" class="mini-btn" style="margin-top:5px;">Clear Image</button>
+                </div>
 
-            <div class="setting-row">
-                <label><input type="checkbox" id="set-music-mode"> 動画を隠す（音楽プレイヤーモード）</label>
-            </div>
-            <div class="setting-row">
-                <label><input type="checkbox" id="set-show-clock"> 時計を表示</label>
-            </div>
-            <div class="setting-row">
-                <label><input type="checkbox" id="set-show-thumbnails"> リストにサムネイルを表示</label>
-            </div>
+                <div class="setting-row">
+                    <label>Panel Opacity & Blur: <span id="op-val">0.5</span></label>
+                    <input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5">
+                </div>
 
-            <div class="setting-row">
-                <label>Boot Sound (起動音)</label>
-                <input type="file" id="set-boot-sound" accept="audio/*" style="font-size:0.8rem;">
-                <button id="btn-clear-sound" class="mini-btn">Clear</button>
+                <div class="setting-row" style="margin-top: 10px;">
+                    <label><input type="checkbox" id="set-music-mode"> 動画を隠す（音楽プレイヤーモード）</label>
+                </div>
+                <div class="setting-row">
+                    <label><input type="checkbox" id="set-show-clock"> 時計を表示</label>
+                </div>
+                <div class="setting-row">
+                    <label><input type="checkbox" id="set-show-thumbnails"> リストにサムネイルを表示</label>
+                </div>
+
+                <div class="setting-row" style="margin-top: 10px;">
+                    <label>Boot Sound (起動音)</label>
+                    <input type="file" id="set-boot-sound" accept="audio/*" style="font-size:0.8rem;">
+                    <button id="btn-clear-sound" class="mini-btn" style="margin-top:5px;">Clear Sound</button>
+                </div>
             </div>
 
             <div class="settings-actions">
