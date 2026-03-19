@@ -5,12 +5,16 @@
     --panel-blur: 10px;
     --border-color: rgba(255, 255, 255, 0.15);
     --text-color: #fff;
-    --sub-text-color: rgba(255, 255, 255, 0.7); /* 全体の文字色に連動させるためrgbaまたはopacity運用に変更 */
+    --sub-text-color: rgba(255, 255, 255, 0.7);
     --accent-color: #00aaff;
     --panel-shadow: 0 10px 30px rgba(0,0,0,0.3);
     --border-radius: 20px;
     --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    
+    /* 背景画像調整用 */
     --bg-image: none;
+    --bg-position: center;
+    --bg-size: cover;
 }
 
 body.theme-toyota {
@@ -40,7 +44,9 @@ body, html {
     font-family: var(--font-family);
     background-color: var(--bg-color);
     background-image: var(--bg-image);
-    background-size: cover; background-position: center;
+    background-position: var(--bg-position); /* 追加 */
+    background-size: var(--bg-size);         /* 追加 */
+    background-repeat: no-repeat;
     color: var(--text-color); overflow: hidden; user-select: none;
 }
 
@@ -59,11 +65,8 @@ body, html {
 
 /* ⚡ 軽量化モード */
 body.performance-mode .panel-glass {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    background: var(--bg-color) !important;
-    border: 1px solid var(--border-color);
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    box-shadow: none !important; background: var(--bg-color) !important; border: 1px solid var(--border-color);
 }
 body.performance-mode .is-marquee { animation: none !important; transform: none !important; }
 body.performance-mode .w-t-playing-icon { animation: none !important; }
@@ -73,8 +76,7 @@ body.performance-mode .boot-skip-hint, body.performance-mode .modern-spinner, bo
 .theme-text { color: var(--text-color); }
 .theme-btn {
     background: var(--text-color); color: #000; border: none;
-    border-radius: var(--border-radius); cursor: pointer; font-weight: bold;
-    transition: 0.2s;
+    border-radius: var(--border-radius); cursor: pointer; font-weight: bold; transition: 0.2s;
 }
 .theme-btn:hover { filter: brightness(1.2); }
 
@@ -114,63 +116,85 @@ body.performance-mode .boot-skip-hint, body.performance-mode .modern-spinner, bo
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes pulse-icon { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-
 /* =========================================
    メインレイアウト設定
    ========================================= */
-
-/* 修正: 時計ウィジェットを階段状のレイアウトに */
 #clock-widget { display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .clock-inner { display: flex; flex-direction: column; width: 100%; max-width: 250px; }
 #clock-date { font-size: 1.2rem; font-weight: bold; text-align: left; margin-bottom: 5px; opacity: 0.9; }
 #clock-time { font-size: 2.8rem; font-weight: bold; letter-spacing: 2px; line-height: 1; text-align: right; }
 body:not(.show-clock) #clock-widget { display: none !important; }
 
-/* 音楽モード時の動画非表示設定 */
-body.music-mode #player-wrapper {
-    position: absolute !important; width: 1px !important; height: 1px !important; 
-    overflow: hidden; opacity: 0; pointer-events: none;
-}
-
+body.music-mode #player-wrapper { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden; opacity: 0; pointer-events: none; }
 #mobile-folder-selector { display: none; }
+#list-toggle-wrapper { display: none; } /* デフォルト非表示 */
 
-/* --- デスクトップ & iPad用レイアウト --- */
+/* --- デスクトップ & iPad用レイアウト (通常モード) --- */
 @media (min-width: 901px) {
     #main-app { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
-    .widget-container {
-        display: grid;
-        grid-template-columns: 350px 220px 1fr;
-        grid-template-rows: auto auto 1fr;
+    
+    /* 🔴 通常モード */
+    body:not(.simple-layout-mode) .widget-container {
+        display: grid; grid-template-columns: 350px 220px 1fr; grid-template-rows: auto auto 1fr;
         gap: 15px; width: 95vw; max-width: 1500px; height: 95vh;
     }
-    
-    #clock-widget { grid-column: 1 / 2; grid-row: 1 / 2; padding: 15px; }
-    #library-nav-wrapper { grid-column: 2 / 4; grid-row: 1 / 2; display: flex; align-items: center; padding: 10px 20px; }
-    #player-wrapper { grid-column: 1 / 2; grid-row: 2 / 3; width: 100%; aspect-ratio: 16 / 9; }
-    #player-controls-wrapper { grid-column: 1 / 2; grid-row: 3 / 4; display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; }
-    
-    #widget-folder-list-wrapper { grid-column: 2 / 3; grid-row: 2 / 4; display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
-    #widget-track-list-wrapper { grid-column: 3 / 4; grid-row: 2 / 4; display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
+    body:not(.simple-layout-mode) #clock-widget { grid-column: 1 / 2; grid-row: 1 / 2; padding: 15px; }
+    body:not(.simple-layout-mode) #library-nav-wrapper { grid-column: 2 / 4; grid-row: 1 / 2; display: flex; align-items: center; padding: 10px 20px; }
+    body:not(.simple-layout-mode) #player-wrapper { grid-column: 1 / 2; grid-row: 2 / 3; width: 100%; aspect-ratio: 16 / 9; }
+    body:not(.simple-layout-mode) #player-controls-wrapper { grid-column: 1 / 2; grid-row: 3 / 4; display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; }
+    body:not(.simple-layout-mode) #widget-folder-list-wrapper { grid-column: 2 / 3; grid-row: 2 / 4; display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
+    body:not(.simple-layout-mode) #widget-track-list-wrapper { grid-column: 3 / 4; grid-row: 2 / 4; display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
 
+    /* 🔵 シンプルレイアウトモード */
+    body.simple-layout-mode .widget-container {
+        display: grid; grid-template-columns: 400px 1fr; grid-template-rows: auto auto 1fr auto;
+        gap: 15px; width: 95vw; max-width: 1500px; height: 95vh;
+    }
+    body.simple-layout-mode.list-visible .widget-container { grid-template-columns: 400px 220px 1fr; }
+    
+    /* 左カラム縦積み: 動画 -> 操作 -> 時計 */
+    body.simple-layout-mode #player-wrapper { grid-column: 1 / 2; grid-row: 1 / 2; width: 100%; aspect-ratio: 16 / 9; }
+    body.simple-layout-mode #player-controls-wrapper { grid-column: 1 / 2; grid-row: 2 / 3; display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; }
+    body.simple-layout-mode #clock-widget { grid-column: 1 / 2; grid-row: 3 / 4; padding: 15px; justify-content: flex-start;}
+    
+    /* 右カラム */
+    body.simple-layout-mode #library-nav-wrapper { grid-column: 2 / -1; grid-row: 1 / 2; display: flex; align-items: center; padding: 10px 20px; }
+    body.simple-layout-mode #widget-folder-list-wrapper, body.simple-layout-mode #widget-track-list-wrapper { display: none; }
+    
+    /* リスト表示時 */
+    body.simple-layout-mode.list-visible #widget-folder-list-wrapper { display: flex; grid-column: 2 / 3; grid-row: 2 / 4; flex-direction: column; overflow: hidden; padding: 15px 0; }
+    body.simple-layout-mode.list-visible #widget-track-list-wrapper { display: flex; grid-column: 3 / 4; grid-row: 2 / 4; flex-direction: column; overflow: hidden; padding: 15px 0; }
+
+    /* トグルボタン配置 */
+    body.simple-layout-mode #list-toggle-wrapper { display: flex; grid-column: 2 / -1; grid-row: 4 / 5; align-items: flex-end;}
+
+    /* シンプルモード時の音楽プレイヤー対応 */
+    body.simple-layout-mode.music-mode .widget-container { grid-template-rows: 0px auto 1fr auto; }
+
+    /* PC共通 内部コンポーネント */
     .player-controls-inner { display: flex; flex-direction: column; align-items: center; width: 100%; text-align: center; }
     .widget-art { width: 160px; height: 160px; margin-bottom: 20px; border-radius: calc(var(--border-radius) / 2); object-fit: cover; border: 1px solid var(--border-color); }
     .widget-info-container { width: 100%; display: flex; flex-direction: column; gap: 10px; }
     .widget-info { width: 100%; }
-    
-    /* 修正: コントロールボタンを中央寄せ、設定ボタンを右端に */
     .widget-controls { width: 100%; display: flex; justify-content: center; align-items: center; position: relative; margin-top: 10px;}
     .controls-main { display: flex; gap: 20px; align-items: center; }
     .settings-btn { position: absolute; right: 0; }
 
-    body.music-mode .widget-container { grid-template-rows: auto 1fr; }
-    body.music-mode #player-controls-wrapper { grid-row: 2 / 4; }
+    body.music-mode:not(.simple-layout-mode) .widget-container { grid-template-rows: auto 1fr; }
+    body.music-mode:not(.simple-layout-mode) #player-controls-wrapper { grid-row: 2 / 4; }
     body.music-mode .widget-art { width: 220px; height: 220px; }
+    
+    /* PC向けトグルボタン */
+    .toggle-list-btn {
+        width: 100%; padding: 15px; font-size: 1.2rem; font-weight: bold; border: none; border-radius: var(--border-radius);
+        background-color: #e63946; color: white; cursor: pointer; box-shadow: var(--panel-shadow); transition: 0.2s;
+    }
+    .toggle-list-btn:hover { filter: brightness(1.2); }
 }
 
 /* --- モバイル用レイアウト --- */
 @media (max-width: 900px) {
-    
-    /* 時計の中央寄せ (スマホ時) */
+    #list-toggle-wrapper { display: none !important; } /* スマホでは使用しない */
     #clock-widget .clock-inner { align-items: center; max-width: none; }
     #clock-date, #clock-time { text-align: center; }
 
@@ -190,34 +214,23 @@ body.music-mode #player-wrapper {
     body:not(.mobile-optimized) .widget-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; position: relative;}
     body:not(.mobile-optimized) .controls-main { display: flex; gap: 10px; align-items: center; }
     body:not(.mobile-optimized) .settings-btn { position: relative; }
-
     body:not(.mobile-optimized) .w-folder-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0 10px; scrollbar-width: none; }
     body:not(.mobile-optimized) .w-folder-list::-webkit-scrollbar { display: none; }
 
     /* 【操作性UP(スマホ特化UI)】 */
-    body.mobile-optimized .widget-container {
-        display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; gap: 0;
-    }
+    body.mobile-optimized .widget-container { display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; gap: 0; }
     body.mobile-optimized .panel-glass { border-radius: 0; border: none; box-shadow: none; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;}
-    
     body.mobile-optimized #clock-widget { order: 1; padding: 10px; flex-shrink: 0; }
     body.mobile-optimized #player-wrapper { order: 2; width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; }
-    
-    /* 動画が表示されている時はアートワーク(サムネ)を隠し、スペースを確保 */
     body.mobile-optimized:not(.music-mode) .widget-art { display: none; }
-
     body.mobile-optimized #player-controls-wrapper { order: 3; padding: 15px; flex-shrink: 0; }
     body.mobile-optimized .player-controls-inner { flex-direction: column; align-items: center; text-align: center; gap: 10px; width: 100%; }
-    
-    /* アートワークのサイズを最適化 */
     body.mobile-optimized .widget-art { width: 45vw; max-width: 250px; height: 45vw; max-height: 250px; border-radius: 12px; margin: 0 auto; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);}
-    
     body.mobile-optimized .widget-info-container { width: 100%; max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
     body.mobile-optimized .widget-info h2 { font-size: 1.2rem; }
     body.mobile-optimized .widget-info p { font-size: 1rem; opacity: 0.8;}
     body.mobile-optimized .progress-area { margin: 10px 0; }
     
-    /* ボタンのレイアウト修正 (中央に均等配置し、はみ出しを防ぐ) */
     body.mobile-optimized .widget-controls { display: flex; justify-content: center; align-items: center; width: 100%; position: relative; }
     body.mobile-optimized .controls-main { display: flex; justify-content: center; align-items: center; gap: 8vw; }
     body.mobile-optimized .widget-controls button { padding: 8px; font-size: 1.5rem; flex-shrink: 0; }
@@ -226,20 +239,12 @@ body.music-mode #player-wrapper {
     
     body.mobile-optimized #library-nav-wrapper { display: none; }
     body.mobile-optimized #widget-folder-list-wrapper { display: none; }
-    
     body.mobile-optimized #mobile-folder-selector { display: block; order: 4; margin-top: 5px; flex-shrink: 0; }
     body.mobile-optimized #mobile-folder-selector .panel-glass { background: rgba(255,255,255,0.05); border-radius: 12px; margin: 0 15px; cursor: pointer; border: 1px solid var(--border-color); }
-
-    /* トラックリスト内部のみスクロール可能にする */
-    body.mobile-optimized #widget-track-list-wrapper { 
-        order: 5; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; margin-top: 10px; overflow: hidden;
-    }
-    body.mobile-optimized .w-track-list {
-        flex: 1; overflow-y: auto; padding: 0 15px 20px 15px;
-    }
+    body.mobile-optimized #widget-track-list-wrapper { order: 5; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; margin-top: 10px; overflow: hidden; }
+    body.mobile-optimized .w-track-list { flex: 1; overflow-y: auto; padding: 0 15px 20px 15px; }
     body.mobile-optimized .w-t-item { padding: 12px 20px; border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 }
-
 
 /* =========================================
    コンポーネント・モジュール
@@ -256,19 +261,16 @@ body.music-mode #player-wrapper {
 .widget-controls .play-btn { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; padding: 0; }
 body.theme-nerv .widget-controls .play-btn { border-radius: 0; border: 1px solid var(--text-color); background: transparent; color: var(--text-color); }
 
-/* --- 再生プログレスバー --- */
 .progress-area { display: flex; align-items: center; gap: 10px; width: 100%; }
 .time-text { font-size: 0.75rem; opacity: 0.8; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .progress-container { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; cursor: pointer; position: relative; }
 .progress-bar { height: 100%; width: 0%; background: var(--text-color); border-radius: 3px; pointer-events: none; transition: width 0.1s linear; }
 
-/* --- Library Nav --- */
 .controls-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
 .filter-option { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; }
 .widget-search { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 6px 15px; color: var(--text-color); outline: none; flex: 1; min-width: 120px; }
 select.widget-search option { background-color: var(--bg-color); color: var(--text-color); }
 
-/* --- Lists --- */
 .w-folder-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; height: 100%; padding: 0 15px; }
 .w-track-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; height: 100%; padding: 0 15px; }
 
@@ -278,7 +280,6 @@ select.widget-search option { background-color: var(--bg-color); color: var(--te
 .w-t-item { display: flex; align-items: center; padding: 10px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; flex-shrink: 0; color: var(--text-color); }
 .w-t-item:hover { background: rgba(128,128,128,0.2); }
 
-/* 🌟 カスタムカラー対応: アクティブ時の文字色・枠線も全て統一色に */
 .w-f-item.active { background: rgba(128,128,128,0.3); font-weight: bold; border-left: 3px solid var(--text-color); color: var(--text-color); }
 .w-t-item.active { background: rgba(128,128,128,0.3); border-left: 3px solid var(--text-color); color: var(--text-color); }
 .w-t-item.active .track-title-text { color: var(--text-color); }
@@ -302,7 +303,6 @@ body.mobile-optimized .w-t-thumb { display: block; width: 55px; height: 55px; bo
 .m-f-item { display: flex; justify-content: space-between; align-items: center; padding: 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 1.1rem; cursor: pointer; color: var(--text-color);}
 .m-f-item.active { color: var(--text-color); font-weight: bold; }
 
-/* === はみ出しスクロール (Marquee) === */
 .marquee-wrapper { overflow: hidden; white-space: nowrap; position: relative; width: 100%; }
 .marquee-content { display: inline-block; will-change: transform; }
 .is-marquee { animation: scroll-left-alternate 8s linear infinite; }
@@ -312,7 +312,7 @@ body.mobile-optimized .w-t-thumb { display: block; width: 55px; height: 55px; bo
     85%, 100% { transform: translateX(0); }
 }
 
-/* === Settings Modal & Color Picker Fix === */
+/* === Settings Modal === */
 .settings-window { width: 500px; max-width: 90%; padding: 30px; display: flex; flex-direction: column; gap: 15px; }
 .setting-scroll-area { max-height: 60vh; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 10px; }
 .setting-row { display: flex; flex-direction: column; gap: 5px; }
