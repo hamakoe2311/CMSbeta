@@ -71,7 +71,7 @@
             
             <!-- 検索・ソート (Nav) -->
             <div id="library-nav-wrapper" class="panel-glass">
-                <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>
+                <!-- <h3 class="library-title theme-text" style="margin-right: 15px;"></h3> -->
                 <div class="controls-wrapper">
                     <label class="filter-option" style="cursor: pointer;">
                         <input type="checkbox" id="exclude-nico"> ニコ除外
@@ -128,7 +128,7 @@
                 </div>
             </div>
 
-            <!-- モバイル特化用 フォルダセレクター (スマホ時のみ表示) -->
+            <!-- モバイル特化用 フォルダセレクター -->
             <div id="mobile-folder-selector">
                 <div class="current-folder-info panel-glass" id="btn-open-mobile-folder">
                     <div style="display:flex; align-items: center; padding: 15px;">
@@ -142,7 +142,7 @@
                 </div>
             </div>
 
-            <!-- フォルダリスト (PC/タブレット用横・縦スクロール) -->
+            <!-- フォルダリスト -->
             <div id="widget-folder-list-wrapper" class="panel-glass">
                 <div class="w-folder-list" id="widget-folder-list"></div>
             </div>
@@ -161,9 +161,7 @@
             <div style="padding: 15px; text-align: center; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 1.2rem;">
                 フォルダを選択
             </div>
-            <div id="mobile-folder-list-modal" style="overflow-y: auto; flex: 1;">
-                <!-- アイテムがここに入る -->
-            </div>
+            <div id="mobile-folder-list-modal" style="overflow-y: auto; flex: 1;"></div>
             <div style="padding: 15px;">
                 <button id="btn-close-folder-modal" class="theme-btn" style="width: 100%; padding: 15px; border-radius: 30px; font-size: 1.1rem;">閉じる</button>
             </div>
@@ -212,7 +210,11 @@
                     <input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5">
                 </div>
 
-                <!-- 追加: 操作性UP -->
+                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                    <label style="color: #ffaa00;"><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
+                    <span style="font-size:0.75rem; color:var(--sub-text-color);">※古いiPad等で重い場合はONにしてください。ぼかし効果や文字アニメーションが停止します。</span>
+                </div>
+
                 <div class="setting-row" style="margin-top: 10px;">
                     <label><input type="checkbox" id="set-mobile-ui"> 操作性UP (スマホ風レイアウト)</label>
                 </div>
