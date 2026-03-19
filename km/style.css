@@ -57,12 +57,12 @@ body, html {
     box-shadow: var(--panel-shadow);
 }
 
-/* ⚡ 軽量化モードの設定 */
+/* ⚡ 軽量化モード */
 body.performance-mode .panel-glass {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     box-shadow: none !important;
-    background: var(--bg-color) !important; /* ぼかし無効時はベタ塗りで視認性確保 */
+    background: var(--bg-color) !important;
     border: 1px solid var(--border-color);
 }
 body.performance-mode .is-marquee { animation: none !important; transform: none !important; }
@@ -114,10 +114,10 @@ body.performance-mode .boot-skip-hint, body.performance-mode .modern-spinner, bo
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes pulse-icon { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+
 /* =========================================
    メインレイアウト設定
    ========================================= */
-
 #clock-widget { display: flex; flex-direction: column; justify-content: center; align-items: center; }
 #clock-time { font-size: 2.2rem; font-weight: bold; letter-spacing: 2px; line-height: 1; margin-bottom: 5px; }
 #clock-date { font-size: 1rem; color: var(--sub-text-color); }
@@ -163,7 +163,7 @@ body.music-mode #player-wrapper {
 /* --- モバイル用レイアウト --- */
 @media (max-width: 900px) {
     
-    /* 【デフォルト】 */
+    /* 【デフォルト (PC版縮小風)】 */
     body:not(.mobile-optimized) .widget-container { display: flex; flex-direction: column; width: 100%; height: 100dvh; padding: 0; gap: 0; }
     body:not(.mobile-optimized) .panel-glass { border-radius: 0; border-left: none; border-right: none; border-top: 1px solid var(--border-color); border-bottom: none; }
     body:not(.mobile-optimized) #clock-widget { order: 1; padding: 10px; flex-shrink: 0; }
@@ -179,53 +179,57 @@ body.music-mode #player-wrapper {
     body:not(.mobile-optimized) .w-folder-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0 10px; scrollbar-width: none; }
     body:not(.mobile-optimized) .w-folder-list::-webkit-scrollbar { display: none; }
 
-
     /* 【操作性UP(スマホ特化UI)】 */
     body.mobile-optimized .widget-container {
-        display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow-y: auto; overflow-x: hidden; gap: 0; padding-bottom: 30px;
+        display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; gap: 0;
     }
     body.mobile-optimized .panel-glass { border-radius: 0; border: none; box-shadow: none; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;}
     
-    body.mobile-optimized #clock-widget { order: 1; padding: 10px; }
+    body.mobile-optimized #clock-widget { order: 1; padding: 10px; flex-shrink: 0; }
     body.mobile-optimized #player-wrapper { order: 2; width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; }
     
     /* 動画が表示されている時はアートワーク(サムネ)を隠し、スペースを確保 */
     body.mobile-optimized:not(.music-mode) .widget-art { display: none; }
 
-    body.mobile-optimized #player-controls-wrapper { order: 3; padding: 15px 15px; }
+    body.mobile-optimized #player-controls-wrapper { order: 3; padding: 15px; flex-shrink: 0; }
     body.mobile-optimized .player-controls-inner { flex-direction: column; align-items: center; text-align: center; gap: 10px; width: 100%; }
     
-    body.mobile-optimized .widget-art { width: 60vw; max-width: 300px; height: 60vw; max-height: 300px; border-radius: 12px; margin: 0 auto; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);}
+    /* アートワークのサイズを最適化 */
+    body.mobile-optimized .widget-art { width: 45vw; max-width: 250px; height: 45vw; max-height: 250px; border-radius: 12px; margin: 0 auto; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);}
     
     body.mobile-optimized .widget-info-container { width: 100%; max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
     body.mobile-optimized .widget-info h2 { font-size: 1.2rem; }
     body.mobile-optimized .widget-info p { font-size: 1rem; }
     body.mobile-optimized .progress-area { margin: 10px 0; }
     
-    /* ボタンのレイアウト崩れ防止 */
-    body.mobile-optimized .widget-controls { display: flex; justify-content: center; gap: 15vw; width: 100%; padding: 0; align-items: center;}
-    body.mobile-optimized .widget-controls button { padding: 5px; flex-shrink: 0; }
-    body.mobile-optimized .widget-controls .play-btn { width: 60px; height: 60px; font-size: 1.8rem; }
+    /* ボタンのレイアウト修正 (均等配置) */
+    body.mobile-optimized .widget-controls {
+        display: flex; justify-content: space-evenly; width: 100%; padding: 0 5%; align-items: center;
+    }
+    body.mobile-optimized .widget-controls button { padding: 8px; flex-shrink: 0; font-size: 1.4rem; }
+    body.mobile-optimized .widget-controls .play-btn { width: 60px; height: 60px; font-size: 1.6rem; }
     
     body.mobile-optimized #library-nav-wrapper { display: none; }
     body.mobile-optimized #widget-folder-list-wrapper { display: none; }
     
-    body.mobile-optimized #mobile-folder-selector { display: block; order: 4; margin-top: 10px; }
+    body.mobile-optimized #mobile-folder-selector { display: block; order: 4; margin-top: 5px; flex-shrink: 0; }
     body.mobile-optimized #mobile-folder-selector .panel-glass { background: rgba(255,255,255,0.05); border-radius: 12px; margin: 0 15px; cursor: pointer; border: 1px solid var(--border-color); }
 
-    body.mobile-optimized #widget-track-list-wrapper { order: 5; flex: none; height: auto; min-height: 40vh; overflow: visible; padding: 0; margin-top: 10px; }
+    /* トラックリスト内部のみスクロール可能にする */
+    body.mobile-optimized #widget-track-list-wrapper { 
+        order: 5; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; margin-top: 10px; overflow: hidden;
+    }
+    body.mobile-optimized .w-track-list {
+        flex: 1; overflow-y: auto; padding: 0 15px 20px 15px;
+    }
     body.mobile-optimized .w-t-item { padding: 12px 20px; border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 }
+
 
 /* =========================================
    コンポーネント・モジュール
    ========================================= */
 
-/* --- 全画面表示用 --- */
-#player-wrapper:fullscreen { width: 100vw !important; height: 100vh !important; border-radius: 0; background: #000; border: none; aspect-ratio: auto !important;}
-#player-wrapper:-webkit-full-screen { width: 100vw !important; height: 100vh !important; border-radius: 0; background: #000; border: none; aspect-ratio: auto !important;}
-
-/* --- Player --- */
 #player-container { width: 100%; height: 100%; background: #000; border-radius: inherit; overflow: hidden; position: relative;}
 #player-container iframe { width: 100%; height: 100%; border: none; }
 
@@ -255,13 +259,18 @@ select.widget-search option { background-color: var(--bg-color); color: var(--te
 
 .w-f-item { padding: 12px 15px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; font-size: 0.95rem; flex-shrink: 0; white-space: nowrap; }
 .w-f-item:hover { background: rgba(128,128,128,0.2); }
-.w-f-item.active { background: rgba(128,128,128,0.3); font-weight: bold; border-left: 3px solid var(--accent-color); color: var(--text-color); }
 
 .w-t-item { display: flex; align-items: center; padding: 10px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; flex-shrink: 0; }
 .w-t-item:hover { background: rgba(128,128,128,0.2); }
-.w-t-item.active { background: rgba(128,128,128,0.3); border-left: 3px solid var(--text-color); color: var(--text-color); }
 
-body.theme-nerv .w-f-item.active, body.theme-nerv .w-t-item.active { background: var(--accent-color); color: #000; border-left: none; }
+/* 🌟 カスタムカラー対応: 選択中アイテムの文字色を変更 */
+.w-f-item.active { background: rgba(128,128,128,0.3); font-weight: bold; border-left: 3px solid var(--accent-color); color: var(--accent-color); }
+.w-t-item.active { background: rgba(128,128,128,0.3); border-left: 3px solid var(--accent-color); color: var(--accent-color); }
+.w-t-item.active .track-title-text { color: var(--accent-color); }
+.w-t-item.active .track-artist-text { color: var(--accent-color); opacity: 0.8; }
+
+body.theme-nerv .w-f-item.active, body.theme-nerv .w-t-item.active { background: var(--accent-color); color: #000 !important; border-left: none; }
+body.theme-nerv .w-t-item.active .track-title-text, body.theme-nerv .w-t-item.active .track-artist-text { color: #000; }
 body.theme-toyota .w-f-item.active, body.theme-toyota .w-t-item.active { background: rgba(0, 170, 255, 0.2); border-left-color: var(--accent-color); }
 
 .w-t-idx { width: 25px; text-align: right; margin-right: 12px; opacity: 0.6; font-size: 0.85rem; flex-shrink: 0;}
@@ -272,8 +281,8 @@ body.show-list-thumbnails .w-t-thumb { display: block; }
 body.mobile-optimized .w-t-thumb { display: block; width: 55px; height: 55px; border-radius: 6px; }
 
 .w-t-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
-.track-title-text { font-size: 0.95rem; font-weight: bold; }
-.track-artist-text { font-size: 0.75rem; color: var(--sub-text-color); }
+.track-title-text { font-size: 0.95rem; font-weight: bold; transition: color 0.2s; }
+.track-artist-text { font-size: 0.75rem; color: var(--sub-text-color); transition: color 0.2s; }
 
 .m-f-item { display: flex; justify-content: space-between; align-items: center; padding: 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 1.1rem; cursor: pointer; }
 .m-f-item.active { color: var(--accent-color); font-weight: bold; }
