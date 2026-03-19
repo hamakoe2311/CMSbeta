@@ -73,7 +73,7 @@
             
             <!-- 検索・ソート (Nav) -->
             <div id="library-nav-wrapper" class="panel-glass">
-               <!--  <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3> -->
+                <!-- <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3> -->
                 <div class="controls-wrapper">
                     <label class="filter-option" style="cursor: pointer;">
                         <input type="checkbox" id="exclude-nico"> ニコ除外
@@ -119,7 +119,6 @@
                             <span id="time-duration" class="time-text">0:00</span>
                         </div>
                         
-                        <!-- 修正: ボタン類を中央寄せするための構造 -->
                         <div class="widget-controls">
                             <div class="controls-main">
                                 <button id="widget-btn-prev" title="前の動画"><i class="fas fa-backward-step"></i></button>
@@ -157,6 +156,11 @@
                 <div class="w-track-list" id="widget-track-list"></div>
             </div>
 
+            <!-- PCシンプルモード用: リスト表示切替ボタン -->
+            <div id="list-toggle-wrapper">
+                <button id="btn-toggle-list" class="toggle-list-btn">リストを表示 (ここをタップ)</button>
+            </div>
+
         </div>
     </div>
 
@@ -190,7 +194,6 @@
                     </select>
                 </div>
                 
-                <!-- 修正: 「全体」の文字色として機能するように -->
                 <div class="setting-row" style="margin-top: 10px;">
                     <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする (すべての文字に適用)</label>
                 </div>
@@ -205,24 +208,50 @@
                     </div>
                 </div>
 
+                <!-- 背景画像の調整 -->
                 <div class="setting-row" style="margin-top: 10px;">
                     <label>Background Image</label>
                     <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
                     <button id="btn-clear-bg" class="mini-btn" style="margin-top:5px;">Clear Image</button>
                 </div>
+                <div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px;">
+                    <div style="flex:1;">
+                        <label>表示位置</label>
+                        <select id="set-bg-position" class="widget-search" style="width:100%; font-size:0.8rem;">
+                            <option value="center">中央</option>
+                            <option value="top">上寄せ</option>
+                            <option value="bottom">下寄せ</option>
+                            <option value="left">左寄せ</option>
+                            <option value="right">右寄せ</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>サイズ</label>
+                        <select id="set-bg-size" class="widget-search" style="width:100%; font-size:0.8rem;">
+                            <option value="cover">全画面拡大</option>
+                            <option value="contain">全体を収める</option>
+                            <option value="auto">元のサイズ</option>
+                        </select>
+                    </div>
+                </div>
 
-                <div class="setting-row">
+                <div class="setting-row" style="margin-top: 10px;">
                     <label>Panel Opacity & Blur: <span id="op-val">0.5</span></label>
                     <input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5">
                 </div>
 
+                <!-- レイアウト関連のトグル -->
                 <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                    <label style="color: #ffaa00;"><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
-                    <span style="font-size:0.75rem; opacity:0.8;">※古いiPad等で重い場合はONにしてください。ぼかし効果や文字アニメーションが停止します。</span>
+                    <label style="color: #ffaa00;"><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※動画・操作・時計のみを左に配置し、リストを隠します。</span>
                 </div>
 
-                <div class="setting-row" style="margin-top: 10px;">
-                    <label><input type="checkbox" id="set-mobile-ui"> 操作性UP (スマホ風レイアウト)</label>
+                <div class="setting-row" style="margin-top: 5px;">
+                    <label><input type="checkbox" id="set-mobile-ui"> 📱 操作性UP (スマホ特化レイアウト)</label>
+                </div>
+                
+                <div class="setting-row" style="margin-top: 5px;">
+                    <label><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
                 </div>
                 
                 <div class="setting-row">
