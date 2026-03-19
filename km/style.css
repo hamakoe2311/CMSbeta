@@ -1,12 +1,12 @@
-
 :root {
+    /* デフォルト (MODERN) 変数 */
     --bg-color: #0f172a;
     --panel-rgb: 255, 255, 255;
-    --panel-alpha: 0.5; /* JS側で正常に値が反映されるように変更 */
-    --panel-blur: 10px;
-    --border-color: rgba(255, 255, 255, 0.1);
+    --panel-alpha: 0.5; /* JS側で設定 */
+    --panel-blur: 10px; /* JS側で設定 */
+    --border-color: rgba(255, 255, 255, 0.15);
     --text-color: #fff;
-    --sub-text-color: #aaa;
+    --sub-text-color: #bbb;
     --accent-color: #00aaff;
     --panel-shadow: 0 10px 30px rgba(0,0,0,0.3);
     --border-radius: 20px;
@@ -14,6 +14,7 @@
     --bg-image: none;
 }
 
+/* === THEME: TOYOTA (車載UI風) === */
 body.theme-toyota {
     --bg-color: #0a0a0c;
     --panel-rgb: 20, 25, 30;
@@ -24,6 +25,7 @@ body.theme-toyota {
     --font-family: "Meiryo", "Hiragino Kaku Gothic Pro", sans-serif;
 }
 
+/* === THEME: NERV (エヴァ風) === */
 body.theme-nerv {
     --bg-color: #000;
     --panel-rgb: 0, 0, 0;
@@ -46,19 +48,9 @@ body, html {
 }
 
 .hidden { display: none !important; }
+.overflow-hidden { overflow: hidden; }
 
-.overlay-screen {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    display: flex; justify-content: center; align-items: center;
-    background: rgba(0, 0, 0, 0.85); z-index: 9000;
-}
-.start-content { padding: 40px; text-align: center; }
-.start-content p { margin-bottom: 20px; }
-
-.custom-file-upload { display: inline-block; padding: 10px 20px; cursor: pointer; }
-#import-json { display: none; }
-.btn-start { padding: 15px 30px; font-size: 1.2rem; }
-
+/* パネルの色・透過・ぼかしの設定 */
 .panel-glass {
     background: rgba(var(--panel-rgb), var(--panel-alpha));
     backdrop-filter: blur(var(--panel-blur));
@@ -76,9 +68,23 @@ body, html {
 }
 .theme-btn:hover { filter: brightness(1.2); }
 
-/* --- Boot Screen --- */
+/* --- オーバーレイ / Start画面 --- */
+.overlay-screen {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; justify-content: center; align-items: center;
+    background: rgba(0, 0, 0, 0.85); z-index: 9000;
+}
+.start-content { padding: 40px; text-align: center; }
+.start-content p { margin-bottom: 20px; }
+.custom-file-upload { display: inline-block; padding: 10px 20px; cursor: pointer; }
+#import-json { display: none; }
+.btn-start { padding: 15px 30px; font-size: 1.2rem; }
+
+/* === ブートスクリーンUI === */
 .boot-skip-hint { position: absolute; bottom: 30px; right: 30px; color: rgba(255,255,255,0.4); font-size: 0.9rem; animation: pulse-icon 2s infinite; pointer-events: none; }
 .boot-container { width: 100%; height: 100%; position: absolute; top:0; left:0; display: flex; justify-content: center; align-items: center; }
+
+/* モダン */
 .boot-modern { flex-direction: column; gap: 20px; }
 .modern-logo { font-size: 3rem; color: #fff; font-weight: 300; letter-spacing: 2px; animation: fadeInUp 1s ease; }
 .modern-spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
@@ -86,12 +92,14 @@ body, html {
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* トヨタ */
 .boot-toyota { background: #050505; flex-direction: column; }
 .toyota-step { transition: opacity 0.8s ease; position: absolute; text-align: center; }
 .toyota-logo { font-size: 2.5rem; color: #00aaff; letter-spacing: 3px; font-weight: bold; }
 .toyota-warning { font-size: 1.5rem; line-height: 1.6; color: #eee; }
 .hidden-step { opacity: 0; pointer-events: none; }
 
+/* NERV */
 .boot-nerv { flex-direction: column; background: #000; border: 10px solid #ff3300; box-sizing: border-box; }
 .nerv-scanline { position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: rgba(255, 157, 0, 0.6); animation: scan 2s linear infinite; z-index: 10; }
 .nerv-top-bar { position: absolute; top: 10px; left: 20px; color: #ff3300; font-family: monospace; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; }
@@ -105,164 +113,158 @@ body, html {
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes pulse-icon { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-/* --- Main App Layout --- */
-#main-app { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
-.widget-container { display: flex; gap: 20px; width: 95%; height: 95%; max-width: 1400px; z-index: 10; }
-body.theme-toyota .widget-container { flex-direction: row-reverse; gap: 10px; }
-body.theme-nerv .widget-container { gap: 10px; }
+/* =========================================
+   メインレイアウト設定 (CSS Grid / Flexbox)
+   ========================================= */
 
-.widget-col-left { display: flex; flex-direction: column; gap: 20px; width: 60%; min-width: 400px; }
-.widget-col-right { flex: 1; display: flex; flex-direction: column; padding: 20px; overflow: hidden; }
+/* 時計ウィジェット設定 */
+#clock-widget {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+#clock-time { font-size: 2.2rem; font-weight: bold; letter-spacing: 2px; line-height: 1; margin-bottom: 5px; }
+#clock-date { font-size: 1rem; color: var(--sub-text-color); }
+body:not(.show-clock) #clock-widget { display: none !important; }
 
-/* --- Standby Area (時計/画像機能) --- */
-.standby-area {
-    width: 100%;
-    height: 100px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: rgba(var(--panel-rgb), var(--panel-alpha));
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    font-size: 3.5rem;
-    font-weight: bold;
-    color: var(--accent-color);
-    box-shadow: var(--panel-shadow);
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(var(--panel-blur));
-}
-.standby-area img {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    z-index: 1;
-}
-#standby-clock {
-    z-index: 2;
-    text-shadow: 0 0 15px rgba(0,0,0,0.8);
-    font-family: var(--font-family);
+/* 音楽モード時の動画非表示設定 */
+body.music-mode #player-wrapper {
+    position: absolute !important; width: 1px !important; height: 1px !important; 
+    overflow: hidden; opacity: 0; pointer-events: none;
 }
 
-/* --- Player --- */
-#player-wrapper { flex: 1; padding: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;}
-#player-container { width: 100%; height: 100%; background: #000; border-radius: calc(var(--border-radius) / 2); overflow: hidden; position: relative;}
+/* --- デスクトップ & iPad用レイアウト --- */
+@media (min-width: 901px) {
+    #main-app { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+    .widget-container {
+        display: grid;
+        grid-template-columns: 350px 220px 1fr;
+        grid-template-rows: auto auto 1fr;
+        gap: 15px; width: 95vw; max-width: 1500px; height: 95vh;
+    }
+    
+    #clock-widget { grid-column: 1 / 2; grid-row: 1 / 2; padding: 15px; }
+    #library-nav-wrapper { grid-column: 2 / 4; grid-row: 1 / 2; display: flex; align-items: center; padding: 10px 20px; }
+    #player-wrapper { grid-column: 1 / 2; grid-row: 2 / 3; width: 100%; aspect-ratio: 16 / 9; }
+    #player-controls-wrapper { grid-column: 1 / 2; grid-row: 3 / 4; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 25px 20px; justify-content: center; }
+    
+    #widget-folder-list-wrapper { grid-column: 2 / 3; grid-row: 2 / 4; display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
+    #widget-track-list-wrapper { grid-column: 3 / 4; grid-row: 2 / 4; display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
+
+    /* コントロールパネルの配置調整 */
+    .widget-art { width: 160px; height: 160px; margin-bottom: 20px; border-radius: calc(var(--border-radius) / 2); object-fit: cover; border: 1px solid var(--border-color); }
+    .widget-info { width: 100%; margin-bottom: 20px; }
+    .widget-controls { width: 100%; display: flex; justify-content: space-evenly; align-items: center; }
+
+    /* 音楽モード時、コントロールを大きく表示するレイアウト補正 */
+    body.music-mode .widget-container { grid-template-rows: auto 1fr; }
+    body.music-mode #player-controls-wrapper { grid-row: 2 / 4; }
+    body.music-mode .widget-art { width: 220px; height: 220px; }
+}
+
+/* --- モバイル用レイアウト --- */
+@media (max-width: 900px) {
+    .widget-container {
+        display: flex; flex-direction: column; width: 100%; height: 100dvh; padding: 0; gap: 0;
+    }
+    .panel-glass { border-radius: 0; border-left: none; border-right: none; border-top: 1px solid var(--border-color); border-bottom: none; }
+    
+    #clock-widget { order: 1; padding: 10px; flex-shrink: 0; }
+    #player-wrapper { order: 2; aspect-ratio: 16 / 9; flex-shrink: 0; border-top: none; }
+    #player-controls-wrapper { order: 3; flex-shrink: 0; padding: 15px; display: flex; align-items: center; gap: 15px; }
+    #library-nav-wrapper { order: 4; flex-shrink: 0; padding: 10px; }
+    #widget-folder-list-wrapper { order: 5; flex-shrink: 0; padding: 10px 0; }
+    #widget-track-list-wrapper { order: 6; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding-top: 5px; }
+
+    .widget-art { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; }
+    .widget-info { flex: 1; min-width: 0; }
+    .widget-controls { display: flex; gap: 15px; align-items: center; }
+}
+
+/* =========================================
+   共通コンポーネント・モジュール
+   ========================================= */
+
+/* --- Player共通 --- */
+#player-container { width: 100%; height: 100%; background: #000; border-radius: inherit; overflow: hidden; position: relative;}
 #player-container iframe { width: 100%; height: 100%; border: none; }
 
-.widget-player { flex-shrink: 0; height: 120px; display: flex; padding: 15px 20px; align-items: center; gap: 20px; }
-.widget-art { width: 90px; height: 90px; border-radius: calc(var(--border-radius) / 2); object-fit: cover; border: 1px solid var(--border-color); }
-
-.widget-info { flex: 1; min-width: 0; text-align: left; overflow: hidden; }
-/* 全画面表示/文字切れ対応: はみ出した文字を横スクロールで読めるようにする */
-.marquee-like {
-    white-space: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-}
-.marquee-like::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-}
-.widget-info h2 { font-size: 1.1rem; margin: 0 0 5px 0; }
+.widget-info h2 { font-size: 1.15rem; margin: 0 0 5px 0; }
 .widget-info p { font-size: 0.85rem; color: var(--sub-text-color); margin: 0; }
 
-.widget-controls { display: flex; gap: 20px; align-items: center; }
 .widget-controls button { background: transparent; border: none; color: var(--text-color); font-size: 1.5rem; cursor: pointer; transition: transform 0.1s; padding: 10px; }
 .widget-controls button:active { transform: scale(0.9); }
-.widget-controls .play-btn { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; padding: 0; }
+.widget-controls .play-btn { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; padding: 0; }
 body.theme-nerv .widget-controls .play-btn { border-radius: 0; border: 1px solid var(--accent-color); background: transparent; color: var(--accent-color); }
 
-/* --- Library --- */
-.widget-nav { display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-.library-title { margin: 0; }
-.controls-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+/* --- Library Nav / Search --- */
+.controls-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
 .filter-option { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; }
-.widget-search { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 6px 15px; color: var(--text-color); outline: none; flex: 1; }
+.widget-search { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 6px 15px; color: var(--text-color); outline: none; flex: 1; min-width: 120px; }
 select.widget-search option { background-color: var(--bg-color); color: var(--text-color); }
 
-.library-content { flex: 1; display: flex; overflow: hidden; gap: 15px; }
+/* --- Lists --- */
+.w-folder-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; height: 100%; padding: 0 15px; }
+.w-track-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; height: 100%; padding: 0 15px; }
 
-/* タブレットレイアウトでの伸縮用 transition */
-.w-folder-list, .w-track-list {
-    transition: flex 0.4s ease, width 0.4s ease;
-}
-.w-folder-list { width: 200px; border-right: 1px solid var(--border-color); padding-right: 15px; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; }
-.w-track-list { flex: 1; padding-left: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
-
-/* タブレット/PC向けの幅アコーディオン動作 */
-@media (min-width: 901px) {
-    .flex-expand { flex: 2 !important; }
-    .flex-shrink { flex: 0.5 !important; }
+/* モバイル向けフォルダリスト横並び */
+@media (max-width: 900px) {
+    .w-folder-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0 10px; scrollbar-width: none; }
+    .w-folder-list::-webkit-scrollbar { display: none; }
 }
 
-.w-f-item, .w-t-item { display: flex; align-items: center; padding: 12px 15px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; flex-shrink: 0; font-size: 0.9rem; }
-.w-f-item:hover, .w-t-item:hover { background: rgba(128,128,128,0.2); }
-.w-f-item.active { background: rgba(128,128,128,0.3); font-weight: bold; border-left: 3px solid var(--accent-color); color: var(--text-color);}
-.w-t-item.active { background: rgba(128,128,128,0.3); font-weight: bold; border-left: 3px solid var(--text-color); color: var(--text-color); }
+.w-f-item { padding: 12px 15px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; font-size: 0.95rem; flex-shrink: 0; white-space: nowrap; }
+.w-f-item:hover { background: rgba(128,128,128,0.2); }
+.w-f-item.active { background: rgba(128,128,128,0.3); font-weight: bold; border-left: 3px solid var(--accent-color); color: var(--text-color); }
+
+.w-t-item { display: flex; align-items: center; padding: 10px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; flex-shrink: 0; }
+.w-t-item:hover { background: rgba(128,128,128,0.2); }
+.w-t-item.active { background: rgba(128,128,128,0.3); border-left: 3px solid var(--text-color); color: var(--text-color); }
 
 body.theme-nerv .w-f-item.active, body.theme-nerv .w-t-item.active { background: var(--accent-color); color: #000; border-left: none; }
 body.theme-toyota .w-f-item.active, body.theme-toyota .w-t-item.active { background: rgba(0, 170, 255, 0.2); border-left-color: var(--accent-color); }
 
-.w-t-idx { display: inline-block; width: 25px; text-align: right; margin-right: 12px; opacity: 0.6; font-size: 0.85rem;}
-.w-t-playing-icon { display: inline-flex; justify-content: center; align-items: center; width: 25px; margin-right: 12px; color: var(--accent-color); animation: pulse-icon 1.5s infinite; }
+/* トラックリストの中身 */
+.w-t-idx { width: 25px; text-align: right; margin-right: 12px; opacity: 0.6; font-size: 0.85rem; flex-shrink: 0;}
+.w-t-playing-icon { display: flex; justify-content: center; align-items: center; width: 25px; margin-right: 12px; color: var(--accent-color); animation: pulse-icon 1.5s infinite; flex-shrink: 0;}
 
-/* トラック情報（タグ検索） */
-.track-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
-.track-title-text {
-    flex: 1; white-space: nowrap; overflow-x: auto; scrollbar-width: none;
+.w-t-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 12px; flex-shrink: 0; display: none; }
+body.show-list-thumbnails .w-t-thumb { display: block; }
+
+.w-t-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.track-title-text { font-size: 0.95rem; font-weight: bold; }
+.track-artist-text { font-size: 0.75rem; color: var(--sub-text-color); }
+
+
+/* === はみ出しスクロール (Marquee) === */
+.marquee-wrapper {
+    overflow: hidden; white-space: nowrap; position: relative; width: 100%;
 }
-.track-title-text::-webkit-scrollbar { display: none; }
-
-.track-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
-.tag-badge {
-    background: rgba(0, 170, 255, 0.2); color: var(--accent-color);
-    border-radius: 4px; padding: 2px 6px; font-size: 0.75rem;
-    cursor: pointer; white-space: nowrap; border: 1px solid var(--accent-color);
-    transition: 0.2s;
+.marquee-content {
+    display: inline-block; will-change: transform;
 }
-.tag-badge:hover { background: var(--accent-color); color: #000; }
+.is-marquee {
+    animation: scroll-left-alternate 8s linear infinite;
+}
+@keyframes scroll-left-alternate {
+    0%, 15% { transform: translateX(0); }
+    45%, 55% { transform: translateX(calc(var(--parent-width) - 100%)); }
+    85%, 100% { transform: translateX(0); }
+}
 
-/* --- Settings Modal --- */
-.settings-window { width: 400px; max-width: 90%; padding: 30px; display: flex; flex-direction: column; gap: 15px; }
+
+/* === Settings Modal === */
+.settings-window { width: 450px; max-width: 90%; padding: 30px; display: flex; flex-direction: column; gap: 15px; }
 .setting-row { display: flex; flex-direction: column; gap: 5px; }
-.setting-row label { font-size: 0.9rem; font-weight: bold; color: var(--accent-color); }
+.setting-row label { font-size: 0.9rem; font-weight: bold; color: var(--accent-color); display: flex; align-items: center; gap: 8px;}
 .mini-btn { background: rgba(255,255,255,0.2); border: 1px solid var(--border-color); color: var(--text-color); padding: 4px 10px; cursor: pointer; border-radius: 4px; }
 .settings-actions { display: flex; gap: 10px; margin-top: 15px; }
 .settings-actions button { padding: 10px; font-weight: bold; }
 .setting-row input[type="file"] { padding: 5px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); }
 .setting-row input[type="file"]::file-selector-button { background: var(--accent-color); color: #000; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-right: 10px; }
+.setting-row input[type="range"] { accent-color: var(--accent-color); }
+.setting-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-color); }
+
 
 /* --- Scrollbar --- */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.5); border-radius: 3px; }
-
-/* --- Mobile Design --- */
-/* スマホ縦画面ではスタンバイ機能(時計等)を非表示にし、領域を確保する */
-@media screen and (max-width: 900px) and (orientation: portrait) {
-    .standby-area { display: none !important; }
-}
-
-@media (max-width: 900px) {
-    .widget-container { flex-direction: column !important; width: 100%; height: 100dvh; padding: 0; gap: 0; border-radius: 0; }
-    .panel-glass { border-radius: 0; border-left: none; border-right: none; }
-    .widget-col-left { width: 100%; height: auto; min-width: 0; gap: 0; }
-    
-    .standby-area { border-radius: 0; border-left: none; border-right: none; height: 80px; font-size: 2.5rem; border-top: none; }
-    
-    #player-wrapper { padding: 0; height: auto; aspect-ratio: 16 / 9; display: block; border-top: none;}
-    #player-container { border-radius: 0; }
-    .widget-player { height: auto; padding: 12px; gap: 15px; }
-    .widget-art { width: 60px; height: 60px; }
-    .widget-controls .play-btn { width: 45px; height: 45px; font-size: 1.1rem; }
-    .widget-col-right { padding: 10px; }
-    .controls-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
-    .filter-option { grid-column: span 2; }
-    #widget-sort-select { grid-column: 1 / 2; }
-    #widget-search-box { grid-column: 2 / 3; }
-    .library-content { flex-direction: column; gap: 5px;}
-    .w-folder-list { width: 100%; border: none; padding: 0 0 5px 0; margin-bottom: 5px; flex-direction: row; overflow-x: auto; overflow-y: hidden; height: auto; gap: 8px; scrollbar-width: none; }
-    .w-folder-list::-webkit-scrollbar { display: none; }
-    .w-f-item { width: auto; justify-content: center; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-color); }
-    .w-track-list { padding-left: 0; }
-}
