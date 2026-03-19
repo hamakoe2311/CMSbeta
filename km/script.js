@@ -5,12 +5,15 @@
 const defaultSettings = {
     theme: 'modern',
     bgImage: '',
+    bgPosition: 'center', // 追加
+    bgSize: 'cover',      // 追加
     bgOpacity: 0.5,
     bootSound: '',
     musicMode: false,
     showClock: true,
     showThumbnails: true,
     mobileOptimizedUI: false,  
+    simpleLayoutMode: false,   // 追加: PC向けシンプルレイアウト
     performanceMode: false,
     customColorEnabled: false,
     customAccentColor: '#00aaff',
@@ -33,6 +36,7 @@ let currentPlayingItem = null;
 
 let ytPlayer = null;
 let isTransitioning = false;
+let isListVisible = false; // PCシンプルモードのリスト表示状態
 
 let bootTimeoutId;
 let toyotaStepTimeoutId;
@@ -78,12 +82,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('widget-btn-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('progress-container').addEventListener('click', handleProgressClick);
 
-    // スマホ用フォルダモーダル開閉
+    // スマホ用フォルダモーダル
     document.getElementById('btn-open-mobile-folder').addEventListener('click', () => {
         document.getElementById('mobile-folder-modal').classList.remove('hidden');
     });
     document.getElementById('btn-close-folder-modal').addEventListener('click', () => {
         document.getElementById('mobile-folder-modal').classList.add('hidden');
+    });
+
+    // PCシンプルモード用 トグルボタン
+    document.getElementById('btn-toggle-list').addEventListener('click', () => {
+        isListVisible = !isListVisible;
+        document.body.classList.toggle('list-visible', isListVisible);
+        const btn = document.getElementById('btn-toggle-list');
+        btn.textContent = isListVisible ? 'リストを隠す' : 'リストを表示 (ここをタップ)';
+        scheduleMarqueeUpdate();
     });
 
     setupPlayerControls();
@@ -106,13 +119,13 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v5');
+        const saved = localStorage.getItem('cms_player_settings_v6');
         if (saved) appSettings = { ...defaultSettings, ...JSON.parse(saved) };
     } catch (e) { console.error("設定読み込みエラー", e); }
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v5', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v6', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -121,18 +134,21 @@ function applyThemeSettings() {
     document.body.classList.toggle('show-list-thumbnails', appSettings.showThumbnails);
     document.body.classList.toggle('show-clock', appSettings.showClock);
     document.body.classList.toggle('mobile-optimized', appSettings.mobileOptimizedUI);
+    document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
     
     if (appSettings.bgImage) {
         document.documentElement.style.setProperty('--bg-image', `url(${appSettings.bgImage})`);
+        document.documentElement.style.setProperty('--bg-position', appSettings.bgPosition);
+        document.documentElement.style.setProperty('--bg-size', appSettings.bgSize);
     } else {
         document.documentElement.style.setProperty('--bg-image', 'none');
     }
     
-    // 🌟 全体の文字色（--text-color）にカスタム色を適用する
+    // 全体の文字色をカスタム可能に
     if (appSettings.customColorEnabled) {
         document.body.style.setProperty('--text-color', appSettings.customAccentColor);
-        document.body.style.setProperty('--accent-color', appSettings.customAccentColor); // 互換性維持のため一応残す
+        document.body.style.setProperty('--accent-color', appSettings.customAccentColor); 
         document.body.style.setProperty('--border-color', appSettings.customBorderColor);
     } else {
         document.body.style.removeProperty('--text-color');
@@ -168,9 +184,12 @@ function setupSettingsModal() {
     
     document.getElementById('btn-open-settings').onclick = () => {
         document.getElementById('set-theme').value = appSettings.theme;
+        document.getElementById('set-bg-position').value = appSettings.bgPosition;
+        document.getElementById('set-bg-size').value = appSettings.bgSize;
         document.getElementById('set-opacity').value = appSettings.bgOpacity;
         document.getElementById('op-val').textContent = appSettings.bgOpacity;
         document.getElementById('set-mobile-ui').checked = appSettings.mobileOptimizedUI;
+        document.getElementById('set-simple-layout').checked = appSettings.simpleLayoutMode;
         document.getElementById('set-performance-mode').checked = appSettings.performanceMode;
         document.getElementById('set-music-mode').checked = appSettings.musicMode;
         document.getElementById('set-show-clock').checked = appSettings.showClock;
@@ -195,7 +214,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v5');
+            localStorage.removeItem('cms_player_settings_v6');
             location.reload();
         }
     };
@@ -222,8 +241,11 @@ function setupSettingsModal() {
 
     document.getElementById('btn-save-settings').onclick = () => {
         appSettings.theme = document.getElementById('set-theme').value;
+        appSettings.bgPosition = document.getElementById('set-bg-position').value;
+        appSettings.bgSize = document.getElementById('set-bg-size').value;
         appSettings.bgOpacity = document.getElementById('set-opacity').value;
         appSettings.mobileOptimizedUI = document.getElementById('set-mobile-ui').checked;
+        appSettings.simpleLayoutMode = document.getElementById('set-simple-layout').checked;
         appSettings.performanceMode = document.getElementById('set-performance-mode').checked;
         appSettings.musicMode = document.getElementById('set-music-mode').checked;
         appSettings.showClock = document.getElementById('set-show-clock').checked;
@@ -363,7 +385,7 @@ function buildLibrary() {
     });
 
     itemsToProcess.forEach(item => {
-        const folders = item.folders && item.folders.length > 0 ? item.folders : [item.folder || 'Manual'];
+        const folders = item.folders && item.folders.length > 0 ? item.folders :[item.folder || 'Manual'];
         folders.forEach(fName => {
             if (!folderMap[fName]) folderMap[fName] =[];
             folderMap[fName].push(item);
@@ -546,7 +568,6 @@ function setupPlayerControls() {
     document.getElementById('widget-btn-prev').onclick = playPrevVideo;
 }
 
-// 🌟 ページ全体を全画面表示 (F11相当) に修正
 function toggleFullscreen() {
     const elem = document.documentElement; 
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
