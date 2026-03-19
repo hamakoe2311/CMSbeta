@@ -63,15 +63,17 @@
     <div id="main-app" class="hidden">
         <div class="widget-container">
             
-            <!-- 時計ウィジェット -->
+            <!-- 時計ウィジェット (階段状レイアウト) -->
             <div id="clock-widget" class="panel-glass">
-                <div id="clock-time" class="theme-text">00:00:00</div>
-                <div id="clock-date">----/--/--</div>
+                <div class="clock-inner">
+                    <div id="clock-date">----/--/--</div>
+                    <div id="clock-time" class="theme-text">00:00:00</div>
+                </div>
             </div>
             
             <!-- 検索・ソート (Nav) -->
             <div id="library-nav-wrapper" class="panel-glass">
-                <!-- <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3> -->
+               <!--  <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3> -->
                 <div class="controls-wrapper">
                     <label class="filter-option" style="cursor: pointer;">
                         <input type="checkbox" id="exclude-nico"> ニコ除外
@@ -117,12 +119,15 @@
                             <span id="time-duration" class="time-text">0:00</span>
                         </div>
                         
+                        <!-- 修正: ボタン類を中央寄せするための構造 -->
                         <div class="widget-controls">
-                            <button id="widget-btn-prev" title="前の動画"><i class="fas fa-backward-step"></i></button>
-                            <button id="widget-btn-play" class="play-btn theme-btn" title="再生/一時停止"><i class="fas fa-play" id="widget-play-icon"></i></button>
-                            <button id="widget-btn-next" title="次の動画"><i class="fas fa-forward-step"></i></button>
-                            <button id="widget-btn-fullscreen" title="全画面表示"><i class="fas fa-expand"></i></button>
-                            <button id="btn-open-settings" title="設定" style="margin-left:auto;"><i class="fas fa-cog"></i></button>
+                            <div class="controls-main">
+                                <button id="widget-btn-prev" title="前の動画"><i class="fas fa-backward-step"></i></button>
+                                <button id="widget-btn-play" class="play-btn theme-btn" title="再生/一時停止"><i class="fas fa-play" id="widget-play-icon"></i></button>
+                                <button id="widget-btn-next" title="次の動画"><i class="fas fa-forward-step"></i></button>
+                                <button id="widget-btn-fullscreen" title="全画面表示"><i class="fas fa-expand"></i></button>
+                            </div>
+                            <button id="btn-open-settings" title="設定" class="settings-btn"><i class="fas fa-cog"></i></button>
                         </div>
                     </div>
                 </div>
@@ -135,7 +140,7 @@
                         <i class="fas fa-play-circle" style="font-size: 1.8rem; margin-right: 15px; color: var(--text-color);"></i>
                         <div style="display:flex; flex-direction:column; flex:1;">
                             <span id="current-folder-name" style="font-weight:bold; font-size:1.1rem;">All</span>
-                            <span style="font-size:0.8rem; color:var(--sub-text-color);" id="current-folder-count">--件のアイテム</span>
+                            <span style="font-size:0.8rem; opacity:0.8;" id="current-folder-count">--件のアイテム</span>
                         </div>
                         <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">編集する</span>
                     </div>
@@ -185,12 +190,13 @@
                     </select>
                 </div>
                 
+                <!-- 修正: 「全体」の文字色として機能するように -->
                 <div class="setting-row" style="margin-top: 10px;">
-                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする</label>
+                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする (すべての文字に適用)</label>
                 </div>
                 <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
                     <div style="flex:1;">
-                        <label>文字・アイコン色</label>
+                        <label>全体の文字色</label>
                         <input type="color" id="set-accent-color" value="#00aaff">
                     </div>
                     <div style="flex:1;">
@@ -212,7 +218,7 @@
 
                 <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
                     <label style="color: #ffaa00;"><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
-                    <span style="font-size:0.75rem; color:var(--sub-text-color);">※古いiPad等で重い場合はONにしてください。ぼかし効果や文字アニメーションが停止します。</span>
+                    <span style="font-size:0.75rem; opacity:0.8;">※古いiPad等で重い場合はONにしてください。ぼかし効果や文字アニメーションが停止します。</span>
                 </div>
 
                 <div class="setting-row" style="margin-top: 10px;">
