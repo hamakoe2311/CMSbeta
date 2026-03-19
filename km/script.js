@@ -11,7 +11,7 @@ const defaultSettings = {
     showClock: true,
     showThumbnails: true,
     mobileOptimizedUI: false,  
-    performanceMode: false,    // ⚡ 軽量化モード
+    performanceMode: false,
     customColorEnabled: false,
     customAccentColor: '#00aaff',
     customBorderColor: '#ffffff'
@@ -106,13 +106,13 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v4');
+        const saved = localStorage.getItem('cms_player_settings_v5');
         if (saved) appSettings = { ...defaultSettings, ...JSON.parse(saved) };
     } catch (e) { console.error("設定読み込みエラー", e); }
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v4', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v5', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -129,10 +129,13 @@ function applyThemeSettings() {
         document.documentElement.style.setProperty('--bg-image', 'none');
     }
     
+    // 🌟 全体の文字色（--text-color）にカスタム色を適用する
     if (appSettings.customColorEnabled) {
-        document.body.style.setProperty('--accent-color', appSettings.customAccentColor);
+        document.body.style.setProperty('--text-color', appSettings.customAccentColor);
+        document.body.style.setProperty('--accent-color', appSettings.customAccentColor); // 互換性維持のため一応残す
         document.body.style.setProperty('--border-color', appSettings.customBorderColor);
     } else {
+        document.body.style.removeProperty('--text-color');
         document.body.style.removeProperty('--accent-color');
         document.body.style.removeProperty('--border-color');
     }
@@ -192,7 +195,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v4');
+            localStorage.removeItem('cms_player_settings_v5');
             location.reload();
         }
     };
@@ -419,7 +422,7 @@ function renderFolders() {
             const mDiv = document.createElement('div');
             mDiv.className = 'm-f-item';
             mDiv.dataset.folderId = folder.id;
-            mDiv.innerHTML = `<span>${folder.name.replace('📁 ', '').replace('📚 ', '')}</span> <i class="fas fa-music" style="color:var(--sub-text-color); font-size:0.9rem;"></i>`;
+            mDiv.innerHTML = `<span>${folder.name.replace('📁 ', '').replace('📚 ', '')}</span> <i class="fas fa-music" style="opacity:0.6; font-size:0.9rem;"></i>`;
             mDiv.onclick = () => {
                 selectFolder(folder.id);
                 document.getElementById('mobile-folder-modal').classList.add('hidden');
@@ -447,7 +450,7 @@ function selectFolder(folderId) {
         if (isActive) {
             el.innerHTML = `<span><i class="fas fa-check" style="margin-right:8px;"></i>${text}</span> <i class="fas fa-music"></i>`;
         } else {
-            el.innerHTML = `<span>${text}</span> <i class="fas fa-music" style="color:var(--sub-text-color); font-size:0.9rem;"></i>`;
+            el.innerHTML = `<span>${text}</span> <i class="fas fa-music" style="opacity:0.6; font-size:0.9rem;"></i>`;
         }
     });
 
@@ -543,9 +546,9 @@ function setupPlayerControls() {
     document.getElementById('widget-btn-prev').onclick = playPrevVideo;
 }
 
-// 🌟 F11相当のページ全体全画面表示
+// 🌟 ページ全体を全画面表示 (F11相当) に修正
 function toggleFullscreen() {
-    const elem = document.documentElement; // ページ全体を指定
+    const elem = document.documentElement; 
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         if (elem.requestFullscreen) {
             elem.requestFullscreen().catch(err => {});
