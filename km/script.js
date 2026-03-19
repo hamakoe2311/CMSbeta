@@ -10,7 +10,8 @@ const defaultSettings = {
     musicMode: false,
     showClock: true,
     showThumbnails: true,
-    mobileOptimizedUI: false,  // 操作性UP（スマホ風UI）のフラグ
+    mobileOptimizedUI: false,  
+    performanceMode: false,    // ⚡ 軽量化モード
     customColorEnabled: false,
     customAccentColor: '#00aaff',
     customBorderColor: '#ffffff'
@@ -105,31 +106,29 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v3');
+        const saved = localStorage.getItem('cms_player_settings_v4');
         if (saved) appSettings = { ...defaultSettings, ...JSON.parse(saved) };
     } catch (e) { console.error("設定読み込みエラー", e); }
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v3', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v4', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
-    // クラスの付け替え
     document.body.className = `theme-${appSettings.theme}`;
     document.body.classList.toggle('music-mode', appSettings.musicMode);
     document.body.classList.toggle('show-list-thumbnails', appSettings.showThumbnails);
     document.body.classList.toggle('show-clock', appSettings.showClock);
     document.body.classList.toggle('mobile-optimized', appSettings.mobileOptimizedUI);
+    document.body.classList.toggle('performance-mode', appSettings.performanceMode);
     
-    // 背景画像
     if (appSettings.bgImage) {
         document.documentElement.style.setProperty('--bg-image', `url(${appSettings.bgImage})`);
     } else {
         document.documentElement.style.setProperty('--bg-image', 'none');
     }
     
-    // カスタムカラー (確実にテーマを上書きするためdocument.body.styleに適用)
     if (appSettings.customColorEnabled) {
         document.body.style.setProperty('--accent-color', appSettings.customAccentColor);
         document.body.style.setProperty('--border-color', appSettings.customBorderColor);
@@ -138,7 +137,6 @@ function applyThemeSettings() {
         document.body.style.removeProperty('--border-color');
     }
 
-    // 透明度・ぼかし
     const op = parseFloat(appSettings.bgOpacity);
     document.documentElement.style.setProperty('--panel-alpha', op);
     document.documentElement.style.setProperty('--panel-blur', `${op * 20}px`);
@@ -170,6 +168,7 @@ function setupSettingsModal() {
         document.getElementById('set-opacity').value = appSettings.bgOpacity;
         document.getElementById('op-val').textContent = appSettings.bgOpacity;
         document.getElementById('set-mobile-ui').checked = appSettings.mobileOptimizedUI;
+        document.getElementById('set-performance-mode').checked = appSettings.performanceMode;
         document.getElementById('set-music-mode').checked = appSettings.musicMode;
         document.getElementById('set-show-clock').checked = appSettings.showClock;
         document.getElementById('set-show-thumbnails').checked = appSettings.showThumbnails;
@@ -193,7 +192,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v3');
+            localStorage.removeItem('cms_player_settings_v4');
             location.reload();
         }
     };
@@ -222,10 +221,10 @@ function setupSettingsModal() {
         appSettings.theme = document.getElementById('set-theme').value;
         appSettings.bgOpacity = document.getElementById('set-opacity').value;
         appSettings.mobileOptimizedUI = document.getElementById('set-mobile-ui').checked;
+        appSettings.performanceMode = document.getElementById('set-performance-mode').checked;
         appSettings.musicMode = document.getElementById('set-music-mode').checked;
         appSettings.showClock = document.getElementById('set-show-clock').checked;
         appSettings.showThumbnails = document.getElementById('set-show-thumbnails').checked;
-        
         appSettings.customColorEnabled = document.getElementById('set-use-custom-color').checked;
         appSettings.customAccentColor = document.getElementById('set-accent-color').value;
         appSettings.customBorderColor = document.getElementById('set-border-color').value;
@@ -249,6 +248,12 @@ function updateClock() {
 }
 
 function updateMarquee() {
+    // 軽量化モード時は計算をスキップして負荷を減らす
+    if (appSettings.performanceMode) {
+        document.querySelectorAll('.marquee-content').forEach(c => c.classList.remove('is-marquee'));
+        return;
+    }
+
     requestAnimationFrame(() => {
         document.querySelectorAll('.marquee-wrapper').forEach(wrapper => {
             const content = wrapper.querySelector('.marquee-content');
@@ -404,7 +409,6 @@ function renderFolders() {
     if (mobileModalListEl) mobileModalListEl.innerHTML = '';
 
     musicLibrary.forEach(folder => {
-        // PC / タブレット用横・縦リスト
         const div = document.createElement('div');
         div.className = 'w-f-item'; 
         div.textContent = folder.name; 
@@ -412,7 +416,6 @@ function renderFolders() {
         div.onclick = () => selectFolder(folder.id);
         folderListEl.appendChild(div);
 
-        // モバイル特化用モーダルリスト
         if (mobileModalListEl) {
             const mDiv = document.createElement('div');
             mDiv.className = 'm-f-item';
@@ -430,7 +433,6 @@ function renderFolders() {
 function selectFolder(folderId) {
     currentFolderId = folderId;
     
-    // PC用リストのハイライト
     document.querySelectorAll('.w-f-item').forEach(el => {
         const isActive = el.dataset.folderId === folderId;
         el.classList.toggle('active', isActive);
@@ -439,7 +441,6 @@ function selectFolder(folderId) {
         }
     });
 
-    // モバイル用モーダルリストのハイライト
     document.querySelectorAll('.m-f-item').forEach(el => {
         const isActive = el.dataset.folderId === folderId;
         el.classList.toggle('active', isActive);
@@ -453,7 +454,6 @@ function selectFolder(folderId) {
 
     const folder = musicLibrary.find(f => f.id === folderId);
     
-    // スマホ用現在フォルダ表示の更新
     if (folder) {
         document.getElementById('current-folder-name').textContent = folder.name.replace('📁 ', '').replace('📚 ', '');
         document.getElementById('current-folder-count').textContent = `${folder.songs.length}件のアイテム`;
@@ -544,11 +544,18 @@ function setupPlayerControls() {
     document.getElementById('widget-btn-prev').onclick = playPrevVideo;
 }
 
+// フルスクリーン対象を動画プレイヤー(wrapper)に変更しバグ回避
 function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {});
+    const playerEl = document.getElementById('player-wrapper');
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (playerEl.requestFullscreen) {
+            playerEl.requestFullscreen().catch(err => {});
+        } else if (playerEl.webkitRequestFullscreen) {
+            playerEl.webkitRequestFullscreen();
+        }
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     }
 }
 
