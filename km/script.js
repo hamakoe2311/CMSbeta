@@ -248,7 +248,6 @@ function updateClock() {
 }
 
 function updateMarquee() {
-    // 軽量化モード時は計算をスキップして負荷を減らす
     if (appSettings.performanceMode) {
         document.querySelectorAll('.marquee-content').forEach(c => c.classList.remove('is-marquee'));
         return;
@@ -544,14 +543,14 @@ function setupPlayerControls() {
     document.getElementById('widget-btn-prev').onclick = playPrevVideo;
 }
 
-// フルスクリーン対象を動画プレイヤー(wrapper)に変更しバグ回避
+// 🌟 F11相当のページ全体全画面表示
 function toggleFullscreen() {
-    const playerEl = document.getElementById('player-wrapper');
+    const elem = document.documentElement; // ページ全体を指定
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (playerEl.requestFullscreen) {
-            playerEl.requestFullscreen().catch(err => {});
-        } else if (playerEl.webkitRequestFullscreen) {
-            playerEl.webkitRequestFullscreen();
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => {});
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
         }
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
