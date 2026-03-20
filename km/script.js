@@ -5,15 +5,17 @@
 const defaultSettings = {
     theme: 'modern',
     bgImage: '',
-    bgPosition: 'center', // 追加
-    bgSize: 'cover',      // 追加
+    bgPosition: 'center',
+    bgSize: 'cover',
     bgOpacity: 0.5,
     bootSound: '',
+    baseFontSize: 100,         // 追加: 全体の文字サイズ(%)
+    pcLeftWidth: 350,          // 追加: PCレイアウトの左幅(px)
     musicMode: false,
     showClock: true,
     showThumbnails: true,
     mobileOptimizedUI: false,  
-    simpleLayoutMode: false,   // 追加: PC向けシンプルレイアウト
+    simpleLayoutMode: false,   
     performanceMode: false,
     customColorEnabled: false,
     customAccentColor: '#00aaff',
@@ -90,12 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('mobile-folder-modal').classList.add('hidden');
     });
 
-    // PCシンプルモード用 トグルボタン
+    // PCシンプルモード用 トグルボタン (アイコン＋テキスト)
     document.getElementById('btn-toggle-list').addEventListener('click', () => {
         isListVisible = !isListVisible;
         document.body.classList.toggle('list-visible', isListVisible);
-        const btn = document.getElementById('btn-toggle-list');
-        btn.textContent = isListVisible ? 'リストを隠す' : 'リストを表示 (ここをタップ)';
+        const textSpan = document.getElementById('toggle-list-text');
+        textSpan.textContent = isListVisible ? 'リストを隠す' : 'リストを表示';
         scheduleMarqueeUpdate();
     });
 
@@ -119,13 +121,13 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v6');
+        const saved = localStorage.getItem('cms_player_settings_v7');
         if (saved) appSettings = { ...defaultSettings, ...JSON.parse(saved) };
     } catch (e) { console.error("設定読み込みエラー", e); }
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v6', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v7', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -137,6 +139,10 @@ function applyThemeSettings() {
     document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
     
+    // 文字サイズ・PCレイアウト幅の適用
+    document.documentElement.style.setProperty('--base-font-size', `${appSettings.baseFontSize}%`);
+    document.documentElement.style.setProperty('--pc-left-width', `${appSettings.pcLeftWidth}px`);
+
     if (appSettings.bgImage) {
         document.documentElement.style.setProperty('--bg-image', `url(${appSettings.bgImage})`);
         document.documentElement.style.setProperty('--bg-position', appSettings.bgPosition);
@@ -145,7 +151,6 @@ function applyThemeSettings() {
         document.documentElement.style.setProperty('--bg-image', 'none');
     }
     
-    // 全体の文字色をカスタム可能に
     if (appSettings.customColorEnabled) {
         document.body.style.setProperty('--text-color', appSettings.customAccentColor);
         document.body.style.setProperty('--accent-color', appSettings.customAccentColor); 
@@ -184,6 +189,10 @@ function setupSettingsModal() {
     
     document.getElementById('btn-open-settings').onclick = () => {
         document.getElementById('set-theme').value = appSettings.theme;
+        document.getElementById('set-font-size').value = appSettings.baseFontSize;
+        document.getElementById('font-val').textContent = appSettings.baseFontSize;
+        document.getElementById('set-pc-left-width').value = appSettings.pcLeftWidth;
+        document.getElementById('pc-width-val').textContent = appSettings.pcLeftWidth;
         document.getElementById('set-bg-position').value = appSettings.bgPosition;
         document.getElementById('set-bg-size').value = appSettings.bgSize;
         document.getElementById('set-opacity').value = appSettings.bgOpacity;
@@ -200,6 +209,12 @@ function setupSettingsModal() {
         modal.classList.remove('hidden');
     };
 
+    document.getElementById('set-font-size').oninput = (e) => {
+        document.getElementById('font-val').textContent = e.target.value;
+    };
+    document.getElementById('set-pc-left-width').oninput = (e) => {
+        document.getElementById('pc-width-val').textContent = e.target.value;
+    };
     document.getElementById('set-opacity').oninput = (e) => {
         const val = e.target.value;
         document.getElementById('op-val').textContent = val;
@@ -214,7 +229,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v6');
+            localStorage.removeItem('cms_player_settings_v7');
             location.reload();
         }
     };
@@ -241,6 +256,8 @@ function setupSettingsModal() {
 
     document.getElementById('btn-save-settings').onclick = () => {
         appSettings.theme = document.getElementById('set-theme').value;
+        appSettings.baseFontSize = document.getElementById('set-font-size').value;
+        appSettings.pcLeftWidth = document.getElementById('set-pc-left-width').value;
         appSettings.bgPosition = document.getElementById('set-bg-position').value;
         appSettings.bgSize = document.getElementById('set-bg-size').value;
         appSettings.bgOpacity = document.getElementById('set-opacity').value;
