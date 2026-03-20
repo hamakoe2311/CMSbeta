@@ -63,7 +63,7 @@
     <div id="main-app" class="hidden">
         <div class="widget-container">
             
-            <!-- 時計ウィジェット (階段状レイアウト) -->
+            <!-- 時計ウィジェット -->
             <div id="clock-widget" class="panel-glass">
                 <div class="clock-inner">
                     <div id="clock-date">----/--/--</div>
@@ -73,7 +73,7 @@
             
             <!-- 検索・ソート (Nav) -->
             <div id="library-nav-wrapper" class="panel-glass">
-                <!-- <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3> -->
+                <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>
                 <div class="controls-wrapper">
                     <label class="filter-option" style="cursor: pointer;">
                         <input type="checkbox" id="exclude-nico"> ニコ除外
@@ -158,7 +158,9 @@
 
             <!-- PCシンプルモード用: リスト表示切替ボタン -->
             <div id="list-toggle-wrapper">
-                <button id="btn-toggle-list" class="toggle-list-btn">リストを表示 (ここをタップ)</button>
+                <button id="btn-toggle-list" class="panel-glass">
+                    <i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span>
+                </button>
             </div>
 
         </div>
@@ -195,7 +197,7 @@
                 </div>
                 
                 <div class="setting-row" style="margin-top: 10px;">
-                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする (すべての文字に適用)</label>
+                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする (全ての文字)</label>
                 </div>
                 <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
                     <div style="flex:1;">
@@ -205,6 +207,18 @@
                     <div style="flex:1;">
                         <label>枠線の色</label>
                         <input type="color" id="set-border-color" value="#ffffff">
+                    </div>
+                </div>
+
+                <!-- 文字・レイアウトサイズ調整 -->
+                <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px; margin-top: 10px;">
+                    <div style="flex:1;">
+                        <label>文字サイズ: <span id="font-val">100</span>%</label>
+                        <input type="range" id="set-font-size" min="80" max="150" step="5" value="100">
+                    </div>
+                    <div style="flex:1;">
+                        <label>PC版 左パネル幅: <span id="pc-width-val">350</span>px</label>
+                        <input type="range" id="set-pc-left-width" min="250" max="600" step="10" value="350">
                     </div>
                 </div>
 
@@ -243,7 +257,7 @@
                 <!-- レイアウト関連のトグル -->
                 <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
                     <label style="color: #ffaa00;"><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label>
-                    <span style="font-size:0.75rem; opacity:0.8;">※動画・操作・時計のみを左に配置し、リストを隠します。</span>
+                    <span style="font-size:0.75rem; opacity:0.8;">※動画・操作・時計のみを左に配置し、リストや検索を隠します。</span>
                 </div>
 
                 <div class="setting-row" style="margin-top: 5px;">
