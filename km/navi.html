@@ -63,11 +63,17 @@
     <div id="main-app" class="hidden">
         <div class="widget-container">
             
-            <!-- 時計ウィジェット -->
+            <!-- 時計ウィジェット & リスト表示ボタン -->
             <div id="clock-widget" class="panel-glass">
                 <div class="clock-inner">
                     <div id="clock-date">----/--/--</div>
                     <div id="clock-time" class="theme-text">00:00:00</div>
+                </div>
+                <!-- PCシンプルモード用: リスト表示切替ボタン -->
+                <div id="list-toggle-wrapper">
+                    <button id="btn-toggle-list" class="panel-glass">
+                        <i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span>
+                    </button>
                 </div>
             </div>
             
@@ -156,13 +162,6 @@
                 <div class="w-track-list" id="widget-track-list"></div>
             </div>
 
-            <!-- PCシンプルモード用: リスト表示切替ボタン -->
-            <div id="list-toggle-wrapper">
-                <button id="btn-toggle-list" class="panel-glass">
-                    <i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span>
-                </button>
-            </div>
-
         </div>
     </div>
 
@@ -197,7 +196,7 @@
                 </div>
                 
                 <div class="setting-row" style="margin-top: 10px;">
-                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする (全ての文字)</label>
+                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする (すべての文字に適用)</label>
                 </div>
                 <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
                     <div style="flex:1;">
