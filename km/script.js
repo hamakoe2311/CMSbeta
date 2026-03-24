@@ -45,7 +45,6 @@ let toyotaStepTimeoutId;
 let resizeTimer;       
 let progressInterval;  
 
-// 仮想リスト（無限スクロール）用の変数
 let currentRenderedCount = 0;
 const RENDER_CHUNK_SIZE = 50;
 let currentRenderSongs =[];
@@ -80,10 +79,20 @@ document.addEventListener('DOMContentLoaded', () => {
         resizeTimer = setTimeout(scheduleMarqueeUpdate, 200);
     });
 
-    // 仮想リスト用のスクロールイベント
+    // 仮想リスト用スクロール & モバイル最小化判定
     trackListEl.addEventListener('scroll', () => {
+        // 無限スクロール
         if (trackListEl.scrollTop + trackListEl.clientHeight >= trackListEl.scrollHeight - 100) {
             loadMoreTracks();
+        }
+        
+        // スマホ特化レイアウト時、スクロールでプレイヤーを最小化
+        if (window.innerWidth <= 900 && appSettings.mobileOptimizedUI && !appSettings.musicMode) {
+            if (trackListEl.scrollTop > 30) {
+                document.body.classList.add('player-minimized');
+            } else {
+                document.body.classList.remove('player-minimized');
+            }
         }
     });
 
@@ -131,13 +140,22 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v8');
-        if (saved) appSettings = { ...defaultSettings, ...JSON.parse(saved) };
+        const saved = localStorage.getItem('cms_player_settings_v9');
+        if (saved) {
+            appSettings = { ...defaultSettings, ...JSON.parse(saved) };
+        } else {
+            // 初回起動時、モバイルなら自動で軽量化・スマホUIをON
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 900;
+            if (isMobile) {
+                appSettings.mobileOptimizedUI = true;
+                appSettings.performanceMode = true;
+            }
+        }
     } catch (e) { console.error("設定読み込みエラー", e); }
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v8', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v9', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -148,6 +166,15 @@ function applyThemeSettings() {
     document.body.classList.toggle('mobile-optimized', appSettings.mobileOptimizedUI);
     document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
+    
+    // リスト表示状態の引き継ぎ (PCシンプルモード時)
+    if (appSettings.simpleLayoutMode && isListVisible) {
+        document.body.classList.add('list-visible');
+        document.getElementById('toggle-list-text').textContent = 'リストを隠す';
+    } else {
+        document.body.classList.remove('list-visible');
+        document.getElementById('toggle-list-text').textContent = 'リストを表示';
+    }
     
     document.documentElement.style.setProperty('--base-font-size', `${appSettings.baseFontSize}%`);
     document.documentElement.style.setProperty('--pc-left-width', `${appSettings.pcLeftWidth}px`);
@@ -238,7 +265,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v8');
+            localStorage.removeItem('cms_player_settings_v9');
             location.reload();
         }
     };
@@ -377,14 +404,19 @@ function startGame() {
         }, 1500);
     }
 
-    bootScreen.onclick = endBootSequence;
+    // クリック＆タッチ対応
+    bootScreen.addEventListener('click', endBootSequence);
+    bootScreen.addEventListener('touchstart', endBootSequence, {passive: true});
+    
     bootTimeoutId = setTimeout(endBootSequence, 4000);
 }
 
 function endBootSequence() {
     clearTimeout(bootTimeoutId);
     clearTimeout(toyotaStepTimeoutId);
-    bootScreen.onclick = null; 
+    bootScreen.removeEventListener('click', endBootSequence);
+    bootScreen.removeEventListener('touchstart', endBootSequence);
+    
     bootScreen.classList.add('hidden');
     mainApp.classList.remove('hidden');
     
@@ -567,7 +599,6 @@ function loadMoreTracks() {
 }
 
 function updateActiveTrackUI() {
-    // アイテムがまだレンダリングされていなければ、そこまで追加ロードする
     if (currentPlayingItem && currentRenderSongs) {
         const activeIndex = currentRenderSongs.findIndex(s => s === currentPlayingItem);
         while(activeIndex >= currentRenderedCount && currentRenderedCount < currentRenderSongs.length) {
