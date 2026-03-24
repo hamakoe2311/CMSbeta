@@ -69,7 +69,8 @@
                     <div id="clock-date">----/--/--</div>
                     <div id="clock-time" class="theme-text">00:00:00</div>
                 </div>
-                <!-- PCシンプルモード用: リスト表示切替ボタン (目立たないデザインに変更) -->
+                <!-- PCシンプルモード用: リスト表示切替ボタン -->
+               
                 <div id="list-toggle-wrapper">
                     <button id="btn-toggle-list" title="リストの表示/非表示">
                         <i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span>
@@ -79,7 +80,7 @@
             
             <!-- 検索・ソート (Nav) -->
             <div id="library-nav-wrapper" class="panel-glass">
-                <!-- <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>-->
+                <!--<h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>-->
                 <div class="controls-wrapper">
                     <label class="filter-option" style="cursor: pointer;">
                         <input type="checkbox" id="exclude-nico"> ニコ除外
@@ -104,9 +105,10 @@
             <!-- 操作パネルとプレイヤー情報 -->
             <div id="player-controls-wrapper" class="panel-glass widget-player">
                 <div class="player-controls-inner">
-                    <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art">
+                    <!-- アートワーク -->
+                    <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art" title="タップでプレイヤーを拡大">
                     
-                    <div class="widget-info-container">
+                    <div class="widget-info-container" title="タップでプレイヤーを拡大">
                         <div class="widget-info overflow-hidden">
                             <div class="marquee-wrapper">
                                 <h2 id="widget-title" class="theme-text marquee-content">Not Playing</h2>
@@ -196,7 +198,7 @@
                 </div>
                 
                 <div class="setting-row" style="margin-top: 10px;">
-                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする (すべての文字に適用)</label>
+                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする</label>
                 </div>
                 <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
                     <div style="flex:1;">
@@ -209,17 +211,19 @@
                     </div>
                 </div>
 
+                <!-- 文字・レイアウトサイズ調整 -->
                 <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px; margin-top: 10px;">
                     <div style="flex:1;">
                         <label>文字サイズ: <span id="font-val">100</span>%</label>
                         <input type="range" id="set-font-size" min="80" max="150" step="5" value="100">
                     </div>
                     <div style="flex:1;">
-                        <label>PC版 左パネル幅: <span id="pc-width-val">350</span>px</label>
+                        <label>PC左パネル幅: <span id="pc-width-val">350</span>px</label>
                         <input type="range" id="set-pc-left-width" min="250" max="600" step="10" value="350">
                     </div>
                 </div>
 
+                <!-- 背景画像の調整 -->
                 <div class="setting-row" style="margin-top: 10px;">
                     <label>Background Image</label>
                     <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
@@ -255,19 +259,17 @@
                     <label style="color: #ffaa00;"><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label>
                     <span style="font-size:0.75rem; opacity:0.8;">※動画・操作・時計のみを左に配置し、リストや検索を隠します。</span>
                 </div>
-
-                <div class="setting-row" style="margin-top: 5px;">
-                    <label><input type="checkbox" id="set-mobile-ui"> 📱 操作性UP (スマホ特化レイアウト)</label>
-                    <span style="font-size:0.75rem; opacity:0.8;">※モバイルでスクロールするとプレイヤーが自動で最小化されます。</span>
-                </div>
                 
                 <div class="setting-row" style="margin-top: 5px;">
                     <label><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※ぼかし効果や文字アニメーションが停止します。</span>
                 </div>
                 
                 <div class="setting-row">
-                    <label><input type="checkbox" id="set-music-mode"> 動画を隠す（音楽プレイヤーモード）</label>
+                    <label><input type="checkbox" id="set-music-mode"> 🎵 動画の表示をオフにする</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※完全に音楽プレイヤーとして使用する場合。</span>
                 </div>
+
                 <div class="setting-row">
                     <label><input type="checkbox" id="set-show-clock"> 時計を表示</label>
                 </div>
