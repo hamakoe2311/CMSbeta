@@ -11,7 +11,6 @@
     --border-radius: 20px;
     --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     
-    /* 追加: サイズと背景設定変数 */
     --base-font-size: 100%;
     --pc-left-width: 350px;
     --bg-image: none;
@@ -128,17 +127,17 @@ body.performance-mode .boot-skip-hint, body.performance-mode .modern-spinner, bo
 /* =========================================
    メインレイアウト設定
    ========================================= */
-#clock-widget { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+#clock-widget { display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;}
 .clock-inner { display: flex; flex-direction: column; width: 100%; max-width: 250px; }
 #clock-date { font-size: 1.2rem; font-weight: bold; text-align: left; margin-bottom: 5px; opacity: 0.9; }
 #clock-time { font-size: 2.8rem; font-weight: bold; letter-spacing: 2px; line-height: 1; text-align: right; }
-body:not(.show-clock) #clock-widget { display: none !important; }
+body:not(.show-clock) .clock-inner { display: none !important; }
 
 body.music-mode #player-wrapper { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden; opacity: 0; pointer-events: none; }
 #mobile-folder-selector { display: none; }
 #list-toggle-wrapper { display: none; }
 
-/* --- デスクトップ & iPad用レイアウト (通常モード) --- */
+/* --- デスクトップ & iPad用レイアウト --- */
 @media (min-width: 901px) {
     #main-app { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
     
@@ -165,30 +164,23 @@ body.music-mode #player-wrapper { position: absolute !important; width: 1px !imp
     body.simple-layout-mode #player-controls-wrapper { grid-column: 1 / 2; grid-row: 2 / 3; display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; }
     body.simple-layout-mode #clock-widget { grid-column: 1 / 2; grid-row: 3 / 4; padding: 15px; justify-content: flex-start;}
     
-    /* リスト非表示時はナビやリストを隠す */
     body.simple-layout-mode:not(.list-visible) #library-nav-wrapper,
     body.simple-layout-mode:not(.list-visible) #widget-folder-list-wrapper,
     body.simple-layout-mode:not(.list-visible) #widget-track-list-wrapper { display: none; }
     
-    /* リスト表示時 */
     body.simple-layout-mode.list-visible #library-nav-wrapper { display: flex; grid-column: 2 / 4; grid-row: 1 / 2; align-items: center; padding: 10px 20px; }
     body.simple-layout-mode.list-visible #widget-folder-list-wrapper { display: flex; grid-column: 2 / 3; grid-row: 2 / 4; flex-direction: column; overflow: hidden; padding: 15px 0; }
     body.simple-layout-mode.list-visible #widget-track-list-wrapper { display: flex; grid-column: 3 / 4; grid-row: 2 / 4; flex-direction: column; overflow: hidden; padding: 15px 0; }
 
-    /* UI調和された トグルボタン配置 */
-    body.simple-layout-mode #list-toggle-wrapper { display: flex; align-items: center; }
-    body.simple-layout-mode:not(.list-visible) #list-toggle-wrapper { grid-column: 2 / 3; grid-row: 1 / 4; justify-content: center; }
-    body.simple-layout-mode.list-visible #list-toggle-wrapper { position: absolute; bottom: 30px; right: 40px; z-index: 100; }
-
+    /* トグルボタン配置 (時計の真下) */
+    body.simple-layout-mode #list-toggle-wrapper { display: flex; align-items: center; width: 100%; margin-top: 15px; }
     #btn-toggle-list {
-        padding: 20px 40px; font-size: 1.5rem; border-radius: var(--border-radius); cursor: pointer;
+        width: 100%; padding: 12px 20px; font-size: 1.1rem; border-radius: var(--border-radius); cursor: pointer;
         color: var(--text-color); background: rgba(var(--panel-rgb), calc(var(--panel-alpha) + 0.3));
-        border: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; transition: 0.3s;
+        border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s;
     }
     #btn-toggle-list:hover { filter: brightness(1.2); transform: scale(1.02); }
-    body.simple-layout-mode.list-visible #btn-toggle-list { padding: 10px 20px; font-size: 1rem; border-radius: 30px;}
 
-    /* シンプルモード時の音楽プレイヤー対応 */
     body.simple-layout-mode.music-mode .widget-container { grid-template-rows: 0px auto 1fr; }
 
     /* PC共通 内部コンポーネント */
@@ -258,7 +250,6 @@ body.music-mode #player-wrapper { position: absolute !important; width: 1px !imp
     body.mobile-optimized .w-track-list { flex: 1; overflow-y: auto; padding: 0 15px 20px 15px; }
     body.mobile-optimized .w-t-item { padding: 12px 20px; border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 }
-
 
 /* =========================================
    コンポーネント・モジュール
@@ -337,8 +328,6 @@ body.mobile-optimized .w-t-thumb { display: block; width: 55px; height: 55px; bo
 .setting-row input[type="file"] { padding: 5px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); }
 .setting-row input[type="file"]::file-selector-button { background: var(--text-color); color: #000; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-right: 10px; }
 .setting-row input[type="range"] { accent-color: var(--text-color); }
-
-/* モバイル版のチェックボックス表示バグを防止するためのスタイル調整 */
 input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--text-color); margin: 0; }
 
 input[type="color"] {
