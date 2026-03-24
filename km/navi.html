@@ -34,7 +34,7 @@
 
     <!-- 起動画面群 -->
     <div id="boot-screen" class="overlay-screen hidden" style="z-index: 9998; background:#000; cursor: pointer;">
-        <div class="boot-skip-hint">Click anywhere to skip</div>
+        <div class="boot-skip-hint">Click / Touch anywhere to skip</div>
         <div class="boot-container boot-modern hidden">
             <div class="modern-logo"><i class="fas fa-layer-group"></i> CMS Player</div>
             <div class="modern-spinner"></div>
@@ -69,9 +69,9 @@
                     <div id="clock-date">----/--/--</div>
                     <div id="clock-time" class="theme-text">00:00:00</div>
                 </div>
-                <!-- PCシンプルモード用: リスト表示切替ボタン -->
+                <!-- PCシンプルモード用: リスト表示切替ボタン (目立たないデザインに変更) -->
                 <div id="list-toggle-wrapper">
-                    <button id="btn-toggle-list" class="panel-glass">
+                    <button id="btn-toggle-list" title="リストの表示/非表示">
                         <i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span>
                     </button>
                 </div>
@@ -79,7 +79,7 @@
             
             <!-- 検索・ソート (Nav) -->
             <div id="library-nav-wrapper" class="panel-glass">
-                <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>
+                <!-- <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>-->
                 <div class="controls-wrapper">
                     <label class="filter-option" style="cursor: pointer;">
                         <input type="checkbox" id="exclude-nico"> ニコ除外
@@ -147,7 +147,7 @@
                             <span id="current-folder-name" style="font-weight:bold; font-size:1.1rem;">All</span>
                             <span style="font-size:0.8rem; opacity:0.8;" id="current-folder-count">--件のアイテム</span>
                         </div>
-                        <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">編集する</span>
+                        <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">フォルダ変更</span>
                     </div>
                 </div>
             </div>
@@ -209,7 +209,6 @@
                     </div>
                 </div>
 
-                <!-- 文字・レイアウトサイズ調整 -->
                 <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px; margin-top: 10px;">
                     <div style="flex:1;">
                         <label>文字サイズ: <span id="font-val">100</span>%</label>
@@ -221,7 +220,6 @@
                     </div>
                 </div>
 
-                <!-- 背景画像の調整 -->
                 <div class="setting-row" style="margin-top: 10px;">
                     <label>Background Image</label>
                     <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
@@ -253,7 +251,6 @@
                     <input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5">
                 </div>
 
-                <!-- レイアウト関連のトグル -->
                 <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
                     <label style="color: #ffaa00;"><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label>
                     <span style="font-size:0.75rem; opacity:0.8;">※動画・操作・時計のみを左に配置し、リストや検索を隠します。</span>
@@ -261,6 +258,7 @@
 
                 <div class="setting-row" style="margin-top: 5px;">
                     <label><input type="checkbox" id="set-mobile-ui"> 📱 操作性UP (スマホ特化レイアウト)</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※モバイルでスクロールするとプレイヤーが自動で最小化されます。</span>
                 </div>
                 
                 <div class="setting-row" style="margin-top: 5px;">
