@@ -28,7 +28,7 @@ body.theme-toyota {
     --font-family: "Meiryo", "Hiragino Kaku Gothic Pro", sans-serif;
 }
 
-/* エヴァ風テーマのフォントを明朝体風・極太に修正 */
+/* エヴァ風テーマのフォントを明朝体・極太に修正 */
 body.theme-nerv {
     --bg-color: #000;
     --panel-rgb: 0, 0, 0;
@@ -40,8 +40,7 @@ body.theme-nerv {
     --border-radius: 0px;
     --font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", "MS PMincho", serif;
 }
-body.theme-nerv * { font-weight: bold; }
-body.theme-nerv .w-f-item, body.theme-nerv .w-t-item, body.theme-nerv .m-f-item { font-weight: bold; }
+body.theme-nerv * { font-weight: bold; letter-spacing: 1px; }
 
 html { font-size: var(--base-font-size); }
 
@@ -51,6 +50,11 @@ body, html {
     background-image: var(--bg-image); background-position: var(--bg-position);
     background-size: var(--bg-size); background-repeat: no-repeat;
     color: var(--text-color); overflow: hidden; user-select: none;
+}
+
+/* iOS用 疑似フルスクリーン */
+body.pseudo-fullscreen #main-app {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000; background: var(--bg-color);
 }
 
 .hidden { display: none !important; }
@@ -125,17 +129,19 @@ body.performance-mode .boot-skip-hint, body.performance-mode .modern-spinner, bo
 #clock-time { font-size: 2.8rem; font-weight: bold; letter-spacing: 2px; line-height: 1; text-align: right; }
 body:not(.show-clock) .clock-inner { display: none !important; }
 
+/* 動画非表示設定 */
 body.music-mode #player-wrapper { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden; opacity: 0; pointer-events: none; }
 #mobile-folder-selector { display: none; }
 #list-toggle-wrapper { display: none; }
 
-/* トランジション用 (モバイル最小化などで滑らかに動かす) */
+/* トランジション */
 #player-wrapper, #player-controls-wrapper, .widget-art, .player-controls-inner, .widget-info-container { transition: all 0.3s ease; }
 
 /* --- デスクトップ & iPad用レイアウト (通常モード) --- */
 @media (min-width: 901px) {
     #main-app { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
     
+    /* 🔴 通常モード */
     body:not(.simple-layout-mode) .widget-container {
         display: grid; grid-template-columns: var(--pc-left-width) 220px 1fr; grid-template-rows: auto auto 1fr;
         gap: 15px; width: 95vw; max-width: 1500px; height: 95vh;
@@ -158,12 +164,10 @@ body.music-mode #player-wrapper { position: absolute !important; width: 1px !imp
     body.simple-layout-mode #player-controls-wrapper { grid-column: 1 / 2; grid-row: 2 / 3; display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; }
     body.simple-layout-mode #clock-widget { grid-column: 1 / 2; grid-row: 3 / 4; padding: 15px; justify-content: flex-start;}
     
-    /* リスト非表示時はナビやリストを隠す */
     body.simple-layout-mode:not(.list-visible) #library-nav-wrapper,
     body.simple-layout-mode:not(.list-visible) #widget-folder-list-wrapper,
     body.simple-layout-mode:not(.list-visible) #widget-track-list-wrapper { display: none; }
     
-    /* リスト表示時 */
     body.simple-layout-mode.list-visible #library-nav-wrapper { display: flex; grid-column: 2 / 4; grid-row: 1 / 2; align-items: center; padding: 10px 20px; }
     body.simple-layout-mode.list-visible #widget-folder-list-wrapper { display: flex; grid-column: 2 / 3; grid-row: 2 / 4; flex-direction: column; overflow: hidden; padding: 15px 0; }
     body.simple-layout-mode.list-visible #widget-track-list-wrapper { display: flex; grid-column: 3 / 4; grid-row: 2 / 4; flex-direction: column; overflow: hidden; padding: 15px 0; }
@@ -178,6 +182,7 @@ body.music-mode #player-wrapper { position: absolute !important; width: 1px !imp
 
     body.simple-layout-mode.music-mode .widget-container { grid-template-rows: 0px auto 1fr; }
 
+    /* PC共通 内部コンポーネント */
     .player-controls-inner { display: flex; flex-direction: column; align-items: center; width: 100%; text-align: center; }
     .widget-art { width: 160px; height: 160px; margin-bottom: 20px; border-radius: calc(var(--border-radius) / 2); object-fit: cover; border: 1px solid var(--border-color); }
     .widget-info-container { width: 100%; display: flex; flex-direction: column; gap: 10px; }
@@ -191,75 +196,69 @@ body.music-mode #player-wrapper { position: absolute !important; width: 1px !imp
     body.music-mode .widget-art { width: 220px; height: 220px; }
 }
 
-/* --- モバイル用レイアウト --- */
+/* --- モバイル用レイアウト (デフォルトで音楽プレイヤー特化UI) --- */
 @media (max-width: 900px) {
     #list-toggle-wrapper { display: none !important; }
     #clock-widget .clock-inner { align-items: center; max-width: none; }
     #clock-date, #clock-time { text-align: center; }
 
-    /* 【デフォルト (PC版縮小風)】 */
-    body:not(.mobile-optimized) .widget-container { display: flex; flex-direction: column; width: 100%; height: 100dvh; padding: 0; gap: 0; }
-    body:not(.mobile-optimized) .panel-glass { border-radius: 0; border-left: none; border-right: none; border-top: 1px solid var(--border-color); border-bottom: none; }
-    body:not(.mobile-optimized) #clock-widget { order: 1; padding: 10px; flex-shrink: 0; }
-    body:not(.mobile-optimized) #player-wrapper { order: 2; aspect-ratio: 16 / 9; flex-shrink: 0; border-top: none; }
-    body:not(.mobile-optimized) #player-controls-wrapper { order: 3; flex-shrink: 0; padding: 15px; }
-    body:not(.mobile-optimized) #library-nav-wrapper { order: 4; flex-shrink: 0; padding: 10px; }
-    body:not(.mobile-optimized) #widget-folder-list-wrapper { order: 5; flex-shrink: 0; padding: 10px 0; }
-    body:not(.mobile-optimized) #widget-track-list-wrapper { order: 6; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding-top: 5px; }
-    body:not(.mobile-optimized) .player-controls-inner { display: flex; flex-direction: row; align-items: center; gap: 15px; width: 100%; }
-    body:not(.mobile-optimized) .widget-art { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; }
-    body:not(.mobile-optimized) .widget-info-container { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-    body:not(.mobile-optimized) .widget-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; position: relative;}
-    body:not(.mobile-optimized) .controls-main { display: flex; gap: 10px; align-items: center; }
-    body:not(.mobile-optimized) .settings-btn { position: relative; }
-    body:not(.mobile-optimized) .w-folder-list { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0 10px; scrollbar-width: none; }
-    body:not(.mobile-optimized) .w-folder-list::-webkit-scrollbar { display: none; }
-
-    /* 【操作性UP(スマホ特化UI)】 */
-    body.mobile-optimized .widget-container { display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; gap: 0; }
-    body.mobile-optimized .panel-glass { border-radius: 0; border: none; box-shadow: none; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;}
-    body.mobile-optimized #clock-widget { order: 1; padding: 10px; flex-shrink: 0; }
-    body.mobile-optimized #player-wrapper { order: 2; width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; }
-    body.mobile-optimized:not(.music-mode) .widget-art { display: none; }
-    body.mobile-optimized #player-controls-wrapper { order: 3; padding: 15px; flex-shrink: 0; }
-    body.mobile-optimized .player-controls-inner { flex-direction: column; align-items: center; text-align: center; gap: 10px; width: 100%; }
-    body.mobile-optimized .widget-art { width: 45vw; max-width: 250px; height: 45vw; max-height: 250px; border-radius: 12px; margin: 0 auto; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5);}
-    body.mobile-optimized .widget-info-container { width: 100%; max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
-    body.mobile-optimized .widget-info h2 { font-size: 1.2rem; }
-    body.mobile-optimized .widget-info p { font-size: 1rem; opacity: 0.8;}
-    body.mobile-optimized .progress-area { margin: 10px 0; }
+    .widget-container { display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; gap: 0; }
+    .panel-glass { border-radius: 0; border: none; box-shadow: none; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;}
     
-    body.mobile-optimized .widget-controls { display: flex; justify-content: center; align-items: center; width: 100%; position: relative; }
-    body.mobile-optimized .controls-main { display: flex; justify-content: center; align-items: center; gap: 8vw; }
-    body.mobile-optimized .widget-controls button { padding: 8px; font-size: 1.5rem; flex-shrink: 0; }
-    body.mobile-optimized .widget-controls .play-btn { width: 65px; height: 65px; font-size: 1.8rem; }
-    body.mobile-optimized .settings-btn { position: absolute; right: 0; }
+    #clock-widget { order: 1; padding: 10px; flex-shrink: 0; }
+    #player-wrapper { order: 2; width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; }
     
-    body.mobile-optimized #library-nav-wrapper { display: none; }
-    body.mobile-optimized #widget-folder-list-wrapper { display: none; }
-    body.mobile-optimized #mobile-folder-selector { display: block; order: 4; margin-top: 5px; flex-shrink: 0; }
-    body.mobile-optimized #mobile-folder-selector .panel-glass { background: rgba(255,255,255,0.05); border-radius: 12px; margin: 0 15px; cursor: pointer; border: 1px solid var(--border-color); }
-    body.mobile-optimized #widget-track-list-wrapper { order: 5; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; margin-top: 10px; overflow: hidden; }
-    body.mobile-optimized .w-track-list { flex: 1; overflow-y: auto; padding: 0 15px 20px 15px; }
-    body.mobile-optimized .w-t-item { padding: 12px 20px; border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    /* 動画が表示されている時はアートワーク(サムネ)を隠し、スペースを確保 */
+    body:not(.music-mode) .widget-art { display: none; }
 
-    /* 📱 モバイル特化UI スクロール時の最小化 (player-minimized) */
-    body.mobile-optimized.player-minimized #player-wrapper { height: 0; padding: 0; margin: 0; border: none; overflow: hidden; opacity: 0;}
-    body.mobile-optimized.player-minimized #player-controls-wrapper { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: rgba(var(--panel-rgb), 0.9); }
-    body.mobile-optimized.player-minimized .player-controls-inner { flex-direction: row; gap: 15px; justify-content: space-between; }
-    body.mobile-optimized.player-minimized .widget-art { width: 45px; height: 45px; margin: 0; border-radius: 6px; box-shadow: none; display: block !important; flex-shrink: 0; }
-    body.mobile-optimized.player-minimized .widget-info-container { flex: 1; flex-direction: row; align-items: center; justify-content: space-between; margin: 0; gap: 10px; }
-    body.mobile-optimized.player-minimized .widget-info { max-width: 150px; text-align: left; }
-    body.mobile-optimized.player-minimized .widget-info h2 { font-size: 1rem; margin: 0; }
-    body.mobile-optimized.player-minimized .widget-info p { font-size: 0.8rem; margin: 0; }
-    body.mobile-optimized.player-minimized .progress-area { display: none; }
-    body.mobile-optimized.player-minimized .widget-controls { width: auto; position: static; }
-    body.mobile-optimized.player-minimized .controls-main { gap: 15px; }
-    body.mobile-optimized.player-minimized .widget-controls .play-btn { width: 40px; height: 40px; font-size: 1.2rem; }
-    body.mobile-optimized.player-minimized .widget-controls button:not(.play-btn):not(#widget-btn-next) { display: none; } /* 再生と次へだけ残す */
-    body.mobile-optimized.player-minimized .widget-controls #widget-btn-next { display: block; font-size: 1.2rem; padding: 5px; }
-    body.mobile-optimized.player-minimized .settings-btn { display: none; }
-    body.mobile-optimized.player-minimized #clock-widget { display: none; } /* 時計も隠す */
+    #player-controls-wrapper { order: 3; padding: 15px; flex-shrink: 0; }
+    .player-controls-inner { flex-direction: column; align-items: center; text-align: center; gap: 10px; width: 100%; }
+    
+    /* アートワークのサイズを最適化 */
+    .widget-art { width: 45vw; max-width: 250px; height: 45vw; max-height: 250px; border-radius: 12px; margin: 0 auto; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5); cursor: pointer;}
+    
+    .widget-info-container { width: 100%; max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; cursor: pointer; }
+    .widget-info h2 { font-size: 1.2rem; }
+    .widget-info p { font-size: 1rem; opacity: 0.8;}
+    .progress-area { margin: 10px 0; }
+    
+    /* ボタンのレイアウト修正 (中央に均等配置) */
+    .widget-controls { display: flex; justify-content: center; align-items: center; width: 100%; position: relative; }
+    .controls-main { display: flex; justify-content: center; align-items: center; gap: 8vw; }
+    .widget-controls button { padding: 8px; font-size: 1.5rem; flex-shrink: 0; }
+    .widget-controls .play-btn { width: 65px; height: 65px; font-size: 1.8rem; }
+    .settings-btn { position: absolute; right: 0; }
+    
+    #library-nav-wrapper { display: none; }
+    #widget-folder-list-wrapper { display: none; }
+    
+    #mobile-folder-selector { display: block; order: 4; margin-top: 5px; flex-shrink: 0; }
+    #mobile-folder-selector .panel-glass { background: rgba(255,255,255,0.05); border-radius: 12px; margin: 0 15px; cursor: pointer; border: 1px solid var(--border-color); }
+
+    /* トラックリスト内部のみスクロール可能にする */
+    #widget-track-list-wrapper { 
+        order: 5; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; margin-top: 10px; overflow: hidden;
+    }
+    .w-track-list { flex: 1; overflow-y: auto; padding: 0 15px 20px 15px; }
+    .w-t-item { padding: 12px 20px; border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    /* 📱 スクロール時のプレイヤー最小化 (player-minimized) */
+    body.player-minimized #player-wrapper { height: 0; padding: 0; margin: 0; border: none; overflow: hidden; opacity: 0;}
+    body.player-minimized #player-controls-wrapper { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: rgba(var(--panel-rgb), 0.9); }
+    body.player-minimized .player-controls-inner { flex-direction: row; gap: 15px; justify-content: space-between; }
+    body.player-minimized .widget-art { width: 45px; height: 45px; margin: 0; border-radius: 6px; box-shadow: none; display: block !important; flex-shrink: 0; }
+    body.player-minimized .widget-info-container { flex: 1; flex-direction: row; align-items: center; justify-content: space-between; margin: 0; gap: 10px; }
+    body.player-minimized .widget-info { max-width: 150px; text-align: left; }
+    body.player-minimized .widget-info h2 { font-size: 1rem; margin: 0; }
+    body.player-minimized .widget-info p { font-size: 0.8rem; margin: 0; }
+    body.player-minimized .progress-area { display: none; }
+    body.player-minimized .widget-controls { width: auto; position: static; }
+    body.player-minimized .controls-main { gap: 15px; }
+    body.player-minimized .widget-controls .play-btn { width: 40px; height: 40px; font-size: 1.2rem; }
+    body.player-minimized .widget-controls button:not(.play-btn):not(#widget-btn-next) { display: none; }
+    body.player-minimized .widget-controls #widget-btn-next { display: block; font-size: 1.2rem; padding: 5px; }
+    body.player-minimized .settings-btn { display: none; }
+    body.player-minimized #clock-widget { display: none; }
 }
 
 
@@ -311,7 +310,7 @@ body.theme-toyota .w-f-item.active, body.theme-toyota .w-t-item.active { backgro
 
 .w-t-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 12px; flex-shrink: 0; display: none; }
 body.show-list-thumbnails .w-t-thumb { display: block; }
-body.mobile-optimized .w-t-thumb { display: block; width: 55px; height: 55px; border-radius: 6px; }
+@media (max-width: 900px) { .w-t-thumb { display: block; width: 55px; height: 55px; border-radius: 6px; } }
 
 .w-t-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
 .track-title-text { font-size: 0.95rem; font-weight: bold; transition: color 0.2s; }
@@ -341,14 +340,22 @@ body.mobile-optimized .w-t-thumb { display: block; width: 55px; height: 55px; bo
 .setting-row input[type="file"]::file-selector-button { background: var(--text-color); color: #000; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-right: 10px; }
 .setting-row input[type="range"] { accent-color: var(--text-color); }
 
-/* モバイル版のチェックボックス表示修正 */
+/* 🌟 iOS対応 カスタムチェックボックス */
 input[type="checkbox"] { 
-    -webkit-appearance: auto !important; appearance: auto !important; 
-    width: 18px; height: 18px; cursor: pointer; accent-color: var(--text-color); margin: 0; 
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px; border: 2px solid var(--border-color); border-radius: 4px;
+    background-color: transparent; cursor: pointer; position: relative; vertical-align: middle; margin: 0; flex-shrink:0;
+}
+input[type="checkbox"]:checked {
+    background-color: var(--text-color); border-color: var(--text-color);
+}
+input[type="checkbox"]:checked::after {
+    content: ''; position: absolute; top: 1px; left: 5px; width: 4px; height: 10px;
+    border: solid var(--bg-color); border-width: 0 2px 2px 0; transform: rotate(45deg);
 }
 
 input[type="color"] {
-    -webkit-appearance: none; -moz-appearance: none; appearance: none; background-color: transparent;
+    appearance: none; -webkit-appearance: none; background-color: transparent;
     border: 2px solid var(--border-color); border-radius: 8px; width: 100%; height: 40px; padding: 0; cursor: pointer;
 }
 input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
