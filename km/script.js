@@ -9,8 +9,8 @@ const defaultSettings = {
     bgSize: 'cover',
     bgOpacity: 0.5,
     bootSound: '',
-    baseFontSize: 100,         // 追加: 全体の文字サイズ(%)
-    pcLeftWidth: 350,          // 追加: PCレイアウトの左幅(px)
+    baseFontSize: 100,         
+    pcLeftWidth: 350,          
     musicMode: false,
     showClock: true,
     showThumbnails: true,
@@ -38,12 +38,17 @@ let currentPlayingItem = null;
 
 let ytPlayer = null;
 let isTransitioning = false;
-let isListVisible = false; // PCシンプルモードのリスト表示状態
+let isListVisible = false;
 
 let bootTimeoutId;
 let toyotaStepTimeoutId;
 let resizeTimer;       
 let progressInterval;  
+
+// 仮想リスト（無限スクロール）用の変数
+let currentRenderedCount = 0;
+const RENDER_CHUNK_SIZE = 50;
+let currentRenderSongs =[];
 
 const importScreen = document.getElementById('import-screen');
 const readyScreen = document.getElementById('ready-screen');
@@ -75,6 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
         resizeTimer = setTimeout(scheduleMarqueeUpdate, 200);
     });
 
+    // 仮想リスト用のスクロールイベント
+    trackListEl.addEventListener('scroll', () => {
+        if (trackListEl.scrollTop + trackListEl.clientHeight >= trackListEl.scrollHeight - 100) {
+            loadMoreTracks();
+        }
+    });
+
     importJsonInput.addEventListener('change', handleFileImport);
     btnUserStart.addEventListener('click', startGame);
     searchBox.addEventListener('input', handleSearch);
@@ -84,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('widget-btn-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('progress-container').addEventListener('click', handleProgressClick);
 
-    // スマホ用フォルダモーダル
     document.getElementById('btn-open-mobile-folder').addEventListener('click', () => {
         document.getElementById('mobile-folder-modal').classList.remove('hidden');
     });
@@ -92,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('mobile-folder-modal').classList.add('hidden');
     });
 
-    // PCシンプルモード用 トグルボタン (アイコン＋テキスト)
     document.getElementById('btn-toggle-list').addEventListener('click', () => {
         isListVisible = !isListVisible;
         document.body.classList.toggle('list-visible', isListVisible);
@@ -121,13 +131,13 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v7');
+        const saved = localStorage.getItem('cms_player_settings_v8');
         if (saved) appSettings = { ...defaultSettings, ...JSON.parse(saved) };
     } catch (e) { console.error("設定読み込みエラー", e); }
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v7', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v8', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -139,7 +149,6 @@ function applyThemeSettings() {
     document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
     
-    // 文字サイズ・PCレイアウト幅の適用
     document.documentElement.style.setProperty('--base-font-size', `${appSettings.baseFontSize}%`);
     document.documentElement.style.setProperty('--pc-left-width', `${appSettings.pcLeftWidth}px`);
 
@@ -229,7 +238,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v7');
+            localStorage.removeItem('cms_player_settings_v8');
             location.reload();
         }
     };
@@ -402,7 +411,7 @@ function buildLibrary() {
     });
 
     itemsToProcess.forEach(item => {
-        const folders = item.folders && item.folders.length > 0 ? item.folders :[item.folder || 'Manual'];
+        const folders = item.folders && item.folders.length > 0 ? item.folders : [item.folder || 'Manual'];
         folders.forEach(fName => {
             if (!folderMap[fName]) folderMap[fName] =[];
             folderMap[fName].push(item);
@@ -442,7 +451,7 @@ function sortSongs(songs) {
 
 
 // ============================================
-// 6. フォルダ・リスト描画
+// 6. フォルダ・リスト描画 (仮想リスト化対応)
 // ============================================
 function renderFolders() {
     folderListEl.innerHTML = '';
@@ -511,13 +520,25 @@ function escapeHTML(str) {
 function renderTracks(songs) {
     trackListEl.innerHTML = ''; 
     trackListEl.scrollTop = 0;
+    currentRenderSongs = songs;
+    currentRenderedCount = 0;
     
     if (songs.length === 0) { 
         trackListEl.innerHTML = '<div style="padding:20px; text-align:center;">動画がありません</div>'; 
         return; 
     }
 
-    songs.forEach((song, index) => {
+    loadMoreTracks();
+}
+
+function loadMoreTracks() {
+    if (currentRenderedCount >= currentRenderSongs.length) return;
+
+    const fragment = document.createDocumentFragment();
+    const endIndex = Math.min(currentRenderedCount + RENDER_CHUNK_SIZE, currentRenderSongs.length);
+
+    for (let i = currentRenderedCount; i < endIndex; i++) {
+        const song = currentRenderSongs[i];
         const div = document.createElement('div');
         div.className = 'w-t-item';
         
@@ -526,7 +547,7 @@ function renderTracks(songs) {
         const thumbSrc = song.thumbnail || "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'><rect width='1' height='1' fill='%23333'/></svg>";
 
         div.innerHTML = `
-            <span class="w-t-idx">${index + 1}</span>
+            <span class="w-t-idx">${i + 1}</span>
             <span class="w-t-playing-icon hidden"><i class="fa-solid fa-volume-high"></i></span>
             <img class="w-t-thumb" src="${thumbSrc}" loading="lazy">
             <div class="w-t-info overflow-hidden">
@@ -534,15 +555,26 @@ function renderTracks(songs) {
                 <div class="marquee-wrapper"><span class="track-artist-text marquee-content">${artist}</span></div>
             </div>`;
             
-        div.onclick = () => startPlaylist(songs, index);
-        trackListEl.appendChild(div);
-    });
+        div.onclick = () => startPlaylist(currentRenderSongs, i);
+        fragment.appendChild(div);
+    }
+    
+    trackListEl.appendChild(fragment);
+    currentRenderedCount = endIndex;
     
     updateActiveTrackUI();
     scheduleMarqueeUpdate();
 }
 
 function updateActiveTrackUI() {
+    // アイテムがまだレンダリングされていなければ、そこまで追加ロードする
+    if (currentPlayingItem && currentRenderSongs) {
+        const activeIndex = currentRenderSongs.findIndex(s => s === currentPlayingItem);
+        while(activeIndex >= currentRenderedCount && currentRenderedCount < currentRenderSongs.length) {
+            loadMoreTracks();
+        }
+    }
+
     document.querySelectorAll('.w-t-item').forEach(el => {
         el.classList.remove('active');
         el.querySelector('.w-t-idx').classList.remove('hidden');
