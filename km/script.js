@@ -14,7 +14,6 @@ const defaultSettings = {
     musicMode: false,
     showClock: true,
     showThumbnails: true,
-    mobileOptimizedUI: false,  
     simpleLayoutMode: false,   
     performanceMode: false,
     customColorEnabled: false,
@@ -81,13 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 仮想リスト用スクロール & モバイル最小化判定
     trackListEl.addEventListener('scroll', () => {
-        // 無限スクロール
         if (trackListEl.scrollTop + trackListEl.clientHeight >= trackListEl.scrollHeight - 100) {
             loadMoreTracks();
         }
         
-        // スマホ特化レイアウト時、スクロールでプレイヤーを最小化
-        if (window.innerWidth <= 900 && appSettings.mobileOptimizedUI && !appSettings.musicMode) {
+        // スマホ時、スクロールでプレイヤーを最小化
+        if (window.innerWidth <= 900) {
             if (trackListEl.scrollTop > 30) {
                 document.body.classList.add('player-minimized');
             } else {
@@ -95,6 +93,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // 最小化されたプレイヤーをタップで元に戻す
+    const infoContainer = document.querySelector('.widget-info-container');
+    const artImage = document.getElementById('widget-art');
+    const restorePlayer = (e) => {
+        if (document.body.classList.contains('player-minimized') && !e.target.closest('.widget-controls') && !e.target.closest('.progress-area')) {
+            document.body.classList.remove('player-minimized');
+            trackListEl.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+    infoContainer.addEventListener('click', restorePlayer);
+    artImage.addEventListener('click', restorePlayer);
 
     importJsonInput.addEventListener('change', handleFileImport);
     btnUserStart.addEventListener('click', startGame);
@@ -140,14 +150,13 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v9');
+        const saved = localStorage.getItem('cms_player_settings_v10');
         if (saved) {
             appSettings = { ...defaultSettings, ...JSON.parse(saved) };
         } else {
-            // 初回起動時、モバイルなら自動で軽量化・スマホUIをON
+            // 初回起動時、モバイルなら自動で軽量化ON
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 900;
             if (isMobile) {
-                appSettings.mobileOptimizedUI = true;
                 appSettings.performanceMode = true;
             }
         }
@@ -155,7 +164,7 @@ function loadSettings() {
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v9', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v10', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -163,11 +172,9 @@ function applyThemeSettings() {
     document.body.classList.toggle('music-mode', appSettings.musicMode);
     document.body.classList.toggle('show-list-thumbnails', appSettings.showThumbnails);
     document.body.classList.toggle('show-clock', appSettings.showClock);
-    document.body.classList.toggle('mobile-optimized', appSettings.mobileOptimizedUI);
     document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
     
-    // リスト表示状態の引き継ぎ (PCシンプルモード時)
     if (appSettings.simpleLayoutMode && isListVisible) {
         document.body.classList.add('list-visible');
         document.getElementById('toggle-list-text').textContent = 'リストを隠す';
@@ -233,7 +240,6 @@ function setupSettingsModal() {
         document.getElementById('set-bg-size').value = appSettings.bgSize;
         document.getElementById('set-opacity').value = appSettings.bgOpacity;
         document.getElementById('op-val').textContent = appSettings.bgOpacity;
-        document.getElementById('set-mobile-ui').checked = appSettings.mobileOptimizedUI;
         document.getElementById('set-simple-layout').checked = appSettings.simpleLayoutMode;
         document.getElementById('set-performance-mode').checked = appSettings.performanceMode;
         document.getElementById('set-music-mode').checked = appSettings.musicMode;
@@ -265,7 +271,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v9');
+            localStorage.removeItem('cms_player_settings_v10');
             location.reload();
         }
     };
@@ -297,7 +303,6 @@ function setupSettingsModal() {
         appSettings.bgPosition = document.getElementById('set-bg-position').value;
         appSettings.bgSize = document.getElementById('set-bg-size').value;
         appSettings.bgOpacity = document.getElementById('set-opacity').value;
-        appSettings.mobileOptimizedUI = document.getElementById('set-mobile-ui').checked;
         appSettings.simpleLayoutMode = document.getElementById('set-simple-layout').checked;
         appSettings.performanceMode = document.getElementById('set-performance-mode').checked;
         appSettings.musicMode = document.getElementById('set-music-mode').checked;
@@ -404,7 +409,7 @@ function startGame() {
         }, 1500);
     }
 
-    // クリック＆タッチ対応
+    // クリック＆タッチでスキップ
     bootScreen.addEventListener('click', endBootSequence);
     bootScreen.addEventListener('touchstart', endBootSequence, {passive: true});
     
@@ -443,7 +448,7 @@ function buildLibrary() {
     });
 
     itemsToProcess.forEach(item => {
-        const folders = item.folders && item.folders.length > 0 ? item.folders : [item.folder || 'Manual'];
+        const folders = item.folders && item.folders.length > 0 ? item.folders :[item.folder || 'Manual'];
         folders.forEach(fName => {
             if (!folderMap[fName]) folderMap[fName] =[];
             folderMap[fName].push(item);
@@ -518,7 +523,7 @@ function selectFolder(folderId) {
     document.querySelectorAll('.w-f-item').forEach(el => {
         const isActive = el.dataset.folderId === folderId;
         el.classList.toggle('active', isActive);
-        if (isActive && window.innerWidth <= 900 && !appSettings.mobileOptimizedUI) {
+        if (isActive && window.innerWidth <= 900) {
             el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
     });
@@ -623,7 +628,16 @@ function updateActiveTrackUI() {
             activeEl.classList.add('active');
             activeEl.querySelector('.w-t-idx').classList.add('hidden');
             activeEl.querySelector('.w-t-playing-icon').classList.remove('hidden');
-            activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // 全体スクロールバグを防ぐため scrollTop で位置を合わせる
+            const listTop = trackListEl.scrollTop;
+            const listHeight = trackListEl.clientHeight;
+            const elTop = activeEl.offsetTop;
+            const elHeight = activeEl.clientHeight;
+            
+            if (elTop < listTop || elTop + elHeight > listTop + listHeight) {
+                trackListEl.scrollTo({ top: elTop - listHeight / 2 + elHeight / 2, behavior: 'smooth' });
+            }
         }
     }
 }
@@ -648,13 +662,24 @@ function setupPlayerControls() {
     document.getElementById('widget-btn-prev').onclick = playPrevVideo;
 }
 
+// 🌟 iOS対応 フォールバック付き疑似フルスクリーン
 function toggleFullscreen() {
     const elem = document.documentElement; 
+    let promise;
+    
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         if (elem.requestFullscreen) {
-            elem.requestFullscreen().catch(err => {});
+            promise = elem.requestFullscreen();
         } else if (elem.webkitRequestFullscreen) {
-            elem.webkitRequestFullscreen();
+            promise = elem.webkitRequestFullscreen();
+        }
+        
+        if (promise) {
+            promise.catch(err => {
+                document.body.classList.toggle('pseudo-fullscreen'); // iOS Safariなど
+            });
+        } else {
+            document.body.classList.toggle('pseudo-fullscreen'); // APIが存在しない場合
         }
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
