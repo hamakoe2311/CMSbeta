@@ -61,51 +61,31 @@
 
     <!-- メインプレイヤーUI -->
     <div id="main-app" class="hidden">
-        <div class="widget-container">
+        
+        <div class="widget-container" id="widget-container">
             
-            <!-- 時計ウィジェット & リスト表示ボタン -->
-            <div id="clock-widget" class="panel-glass">
+            <!-- PCレイアウト用カラム -->
+            <div id="pc-col-1" class="pc-column"></div>
+            <div id="pc-col-2" class="pc-column"></div>
+
+            <!-- 以下はJSによって col-1 か col-2 に振り分けられる -->
+
+            <!-- [1] 時計ウィジェット -->
+            <div id="widget-clock" class="panel-glass layout-block">
                 <div class="clock-inner">
                     <div id="clock-date">----/--/--</div>
                     <div id="clock-time" class="theme-text">00:00:00</div>
                 </div>
-                <!-- PCシンプルモード用: リスト表示切替ボタン -->
-               
-                <div id="list-toggle-wrapper">
-                    <button id="btn-toggle-list" title="リストの表示/非表示">
-                        <i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- 検索・ソート (Nav) -->
-            <div id="library-nav-wrapper" class="panel-glass">
-                <!--<h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>-->
-                <div class="controls-wrapper">
-                    <label class="filter-option" style="cursor: pointer;">
-                        <input type="checkbox" id="exclude-nico"> ニコ除外
-                    </label>
-                    <select id="widget-sort-select" class="widget-search">
-                        <option value="custom">🔢 カスタム順</option>
-                        <option value="title_asc">🔤 名前 (A-Z)</option>
-                        <option value="title_desc">🔤 名前 (Z-A)</option>
-                        <option value="newest">📅 新しい順</option>
-                        <option value="oldest">📅 古い順</option>
-                        <option value="playCount_desc">▶ 再生数順</option>
-                    </select>
-                    <input type="text" id="widget-search-box" class="widget-search" placeholder="Search...">
-                </div>
             </div>
 
-            <!-- 動画プレイヤー -->
-            <div id="player-wrapper" class="panel-glass">
+            <!-- [2] 動画プレイヤー -->
+            <div id="widget-player" class="panel-glass layout-block">
                 <div id="player-container"></div>
             </div>
 
-            <!-- 操作パネルとプレイヤー情報 -->
-            <div id="player-controls-wrapper" class="panel-glass widget-player">
+            <!--[3] 操作パネルとプレイヤー情報 -->
+            <div id="widget-controls" class="panel-glass widget-player layout-block">
                 <div class="player-controls-inner">
-                    <!-- アートワーク -->
                     <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art" title="タップでプレイヤーを拡大">
                     
                     <div class="widget-info-container" title="タップでプレイヤーを拡大">
@@ -118,7 +98,6 @@
                             </div>
                         </div>
 
-                        <!-- 再生プログレスバー -->
                         <div class="progress-area">
                             <span id="time-current" class="time-text">0:00</span>
                             <div class="progress-container" id="progress-container">
@@ -140,28 +119,49 @@
                 </div>
             </div>
 
-            <!-- モバイル特化用 フォルダセレクター -->
-            <div id="mobile-folder-selector">
-                <div class="current-folder-info panel-glass" id="btn-open-mobile-folder">
-                    <div style="display:flex; align-items: center; padding: 15px;">
-                        <i class="fas fa-play-circle" style="font-size: 1.8rem; margin-right: 15px; color: var(--text-color);"></i>
-                        <div style="display:flex; flex-direction:column; flex:1;">
-                            <span id="current-folder-name" style="font-weight:bold; font-size:1.1rem;">All</span>
-                            <span style="font-size:0.8rem; opacity:0.8;" id="current-folder-count">--件のアイテム</span>
-                        </div>
-                        <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">フォルダ変更</span>
+            <!-- [4] ライブラリ (検索・フォルダ・リスト) -->
+            <div id="widget-library" class="layout-block">
+                
+                <div id="library-nav-wrapper" class="panel-glass">
+                    <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>
+                    <div class="controls-wrapper">
+                        <label class="filter-option" style="cursor: pointer;">
+                            <input type="checkbox" id="exclude-nico"> ニコ除外
+                        </label>
+                        <select id="widget-sort-select" class="widget-search">
+                            <option value="custom">🔢 カスタム順</option>
+                            <option value="newest">📅 新しい順</option>
+                            <option value="oldest">📅 古い順</option>
+                            <option value="playCount_desc">▶ 再生数順</option>
+                            <option value="title_asc">🔤 名前 (A-Z)</option>
+                            <option value="title_desc">🔤 名前 (Z-A)</option>
+                        </select>
+                        <input type="text" id="widget-search-box" class="widget-search" placeholder="Search...">
                     </div>
                 </div>
-            </div>
 
-            <!-- フォルダリスト -->
-            <div id="widget-folder-list-wrapper" class="panel-glass">
-                <div class="w-folder-list" id="widget-folder-list"></div>
-            </div>
+                <div id="mobile-folder-selector">
+                    <div class="current-folder-info panel-glass" id="btn-open-mobile-folder">
+                        <div style="display:flex; align-items: center; padding: 15px;">
+                            <i class="fas fa-play-circle" style="font-size: 1.8rem; margin-right: 15px; color: var(--text-color);"></i>
+                            <div style="display:flex; flex-direction:column; flex:1;">
+                                <span id="current-folder-name" style="font-weight:bold; font-size:1.1rem;">All</span>
+                                <span style="font-size:0.8rem; opacity:0.8;" id="current-folder-count">--件のアイテム</span>
+                            </div>
+                            <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">フォルダ変更</span>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- トラックリスト -->
-            <div id="widget-track-list-wrapper" class="panel-glass">
-                <div class="w-track-list" id="widget-track-list"></div>
+                <div class="library-lists-container">
+                    <div id="widget-folder-list-wrapper" class="panel-glass">
+                        <div class="w-folder-list" id="widget-folder-list"></div>
+                    </div>
+                    <div id="widget-track-list-wrapper" class="panel-glass">
+                        <div class="w-track-list" id="widget-track-list"></div>
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -188,6 +188,7 @@
             </h2>
             
             <div class="setting-scroll-area">
+                
                 <div class="setting-row">
                     <label>UI Theme</label>
                     <select id="set-theme" class="widget-search">
@@ -211,7 +212,6 @@
                     </div>
                 </div>
 
-                <!-- 文字・レイアウトサイズ調整 -->
                 <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px; margin-top: 10px;">
                     <div style="flex:1;">
                         <label>文字サイズ: <span id="font-val">100</span>%</label>
@@ -223,8 +223,30 @@
                     </div>
                 </div>
 
-                <!-- 背景画像の調整 -->
-                <div class="setting-row" style="margin-top: 10px;">
+                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                    <label style="color: #00aaff; font-size: 1rem;"><i class="fas fa-table"></i> PCレイアウト自由配置</label>
+                    <span style="font-size:0.75rem; opacity:0.8; margin-bottom: 5px;">各要素の配置カラム（左・右）と順番（1〜4）を設定できます。</span>
+                    
+                    <div class="layout-config-grid">
+                        <span>動画プレイヤー</span>
+                        <select id="lay-player-col" class="widget-search"><option value="1">左</option><option value="2">右</option></select>
+                        <input type="number" id="lay-player-order" class="widget-search" min="1" max="4">
+                        
+                        <span>操作パネル</span>
+                        <select id="lay-controls-col" class="widget-search"><option value="1">左</option><option value="2">右</option></select>
+                        <input type="number" id="lay-controls-order" class="widget-search" min="1" max="4">
+                        
+                        <span>時計</span>
+                        <select id="lay-clock-col" class="widget-search"><option value="1">左</option><option value="2">右</option></select>
+                        <input type="number" id="lay-clock-order" class="widget-search" min="1" max="4">
+                        
+                        <span>リスト(Library)</span>
+                        <select id="lay-library-col" class="widget-search"><option value="1">左</option><option value="2">右</option></select>
+                        <input type="number" id="lay-library-order" class="widget-search" min="1" max="4">
+                    </div>
+                </div>
+
+                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
                     <label>Background Image</label>
                     <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
                     <button id="btn-clear-bg" class="mini-btn" style="margin-top:5px;">Clear Image</button>
@@ -233,19 +255,13 @@
                     <div style="flex:1;">
                         <label>表示位置</label>
                         <select id="set-bg-position" class="widget-search" style="width:100%; font-size:0.8rem;">
-                            <option value="center">中央</option>
-                            <option value="top">上寄せ</option>
-                            <option value="bottom">下寄せ</option>
-                            <option value="left">左寄せ</option>
-                            <option value="right">右寄せ</option>
+                            <option value="center">中央</option><option value="top">上寄せ</option><option value="bottom">下寄せ</option><option value="left">左寄せ</option><option value="right">右寄せ</option>
                         </select>
                     </div>
                     <div style="flex:1;">
                         <label>サイズ</label>
                         <select id="set-bg-size" class="widget-search" style="width:100%; font-size:0.8rem;">
-                            <option value="cover">全画面拡大</option>
-                            <option value="contain">全体を収める</option>
-                            <option value="auto">元のサイズ</option>
+                            <option value="cover">全画面拡大</option><option value="contain">全体を収める</option><option value="auto">元のサイズ</option>
                         </select>
                     </div>
                 </div>
@@ -254,27 +270,20 @@
                     <label>Panel Opacity & Blur: <span id="op-val">0.5</span></label>
                     <input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5">
                 </div>
-
-                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                    <label style="color: #ffaa00;"><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label>
-                    <span style="font-size:0.75rem; opacity:0.8;">※動画・操作・時計のみを左に配置し、リストや検索を隠します。</span>
-                </div>
                 
-                <div class="setting-row" style="margin-top: 5px;">
-                    <label><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
-                    <span style="font-size:0.75rem; opacity:0.8;">※ぼかし効果や文字アニメーションが停止します。</span>
+                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                    <label style="color: #ffaa00;"><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※ぼかし効果やアニメーションが停止します。</span>
                 </div>
                 
                 <div class="setting-row">
                     <label><input type="checkbox" id="set-music-mode"> 🎵 動画の表示をオフにする</label>
-                    <span style="font-size:0.75rem; opacity:0.8;">※完全に音楽プレイヤーとして使用する場合。</span>
-                </div>
-
-                <div class="setting-row">
-                    <label><input type="checkbox" id="set-show-clock"> 時計を表示</label>
                 </div>
                 <div class="setting-row">
-                    <label><input type="checkbox" id="set-show-thumbnails"> リストにサムネイルを表示</label>
+                    <label><input type="checkbox" id="set-show-clock"> 🕒 時計を表示</label>
+                </div>
+                <div class="setting-row">
+                    <label><input type="checkbox" id="set-show-thumbnails"> 🖼 リストにサムネイルを表示</label>
                 </div>
 
                 <div class="setting-row" style="margin-top: 10px;">
