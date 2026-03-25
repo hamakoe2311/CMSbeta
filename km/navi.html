@@ -68,10 +68,11 @@
             <div id="pc-col-1" class="pc-column"></div>
             <div id="pc-col-2" class="pc-column"></div>
 
-            <!-- 以下はJSによって col-1 か col-2 に振り分けられる -->
+            <!-- 以下はJSによって col-1 か col-2 に振り分けられ、ドラッグで移動可能 -->
 
             <!-- [1] 時計ウィジェット -->
             <div id="widget-clock" class="panel-glass layout-block">
+                <div class="drag-handle" title="ドラッグして移動"><i class="fas fa-grip-horizontal"></i></div>
                 <div class="clock-inner">
                     <div id="clock-date">----/--/--</div>
                     <div id="clock-time" class="theme-text">00:00:00</div>
@@ -86,11 +87,13 @@
 
             <!-- [2] 動画プレイヤー -->
             <div id="widget-player" class="panel-glass layout-block">
+                <div class="drag-handle" title="ドラッグして移動"><i class="fas fa-grip-horizontal"></i></div>
                 <div id="player-container"></div>
             </div>
 
             <!--[3] 操作パネルとプレイヤー情報 -->
             <div id="widget-controls" class="panel-glass widget-player layout-block">
+                <div class="drag-handle" title="ドラッグして移動"><i class="fas fa-grip-horizontal"></i></div>
                 <div class="player-controls-inner">
                     <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art" title="タップでプレイヤーを拡大">
                     
@@ -127,8 +130,9 @@
 
             <!--[4] ライブラリ (検索・フォルダ・リスト) -->
             <div id="widget-library" class="layout-block">
+                <div class="drag-handle" title="ドラッグして移動" style="top: 10px; right: 10px;"><i class="fas fa-grip-horizontal"></i></div>
                 
-                <!-- モバイル特化用 ツール (フォルダ選択 & 検索トグル) -->
+                <!-- モバイル特化用 ツール -->
                 <div id="mobile-tools-wrapper">
                     <div class="current-folder-info panel-glass" id="btn-open-mobile-folder">
                         <div style="display:flex; align-items: center; padding: 15px;">
@@ -146,7 +150,7 @@
                 </div>
 
                 <div id="library-nav-wrapper" class="panel-glass">
-                    <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>
+                   <!-- <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>-->
                     <div class="controls-wrapper">
                         <label class="filter-option" style="cursor: pointer;">
                             <input type="checkbox" id="exclude-nico"> ニコ除外
@@ -233,21 +237,6 @@
                     </div>
                 </div>
 
-                <!-- 🌟 ドラッグ＆ドロップ設定 UI -->
-                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                    <label style="color: #00aaff; font-size: 1rem;"><i class="fas fa-table"></i> PCレイアウト自由配置</label>
-                    <span style="font-size:0.75rem; opacity:0.8; margin-bottom: 5px;">要素をドラッグ＆ドロップして配置・順番を変更できます。</span>
-                    
-                    <div class="layout-config-dnd">
-                        <div class="dnd-column" id="dnd-col-1">
-                            <div class="dnd-header">左カラム</div>
-                        </div>
-                        <div class="dnd-column" id="dnd-col-2">
-                            <div class="dnd-header">右カラム</div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
                     <label>Background Image</label>
                     <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
@@ -285,7 +274,6 @@
 
                 <div class="setting-row" style="margin-top: 5px;">
                     <label><input type="checkbox" id="set-mobile-ui"> 📱 操作性UP (スマホ特化レイアウト)</label>
-                    <span style="font-size:0.75rem; opacity:0.8;">※モバイル環境での利用に特化したデザインにします。</span>
                 </div>
                 
                 <div class="setting-row">
