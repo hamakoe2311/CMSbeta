@@ -14,7 +14,7 @@ const defaultSettings = {
     musicMode: false,
     showClock: true,
     showThumbnails: true,
-    mobileOptimizedUI: true,  // 廃止予定だが互換のため残す
+    mobileOptimizedUI: true,  
     simpleLayoutMode: false,   
     performanceMode: false,
     customColorEnabled: false,
@@ -77,7 +77,8 @@ const nicoCheckbox = document.getElementById('exclude-nico');
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     applyThemeSettings();
-    applyPCLayoutDOM(); // PCレイアウトの適用
+    applyPCLayoutDOM(); 
+    initMainDnDUI(); // PC用の直感ドラッグ＆ドロップ初期化
 
     updateClock();
     setInterval(updateClock, 1000);
@@ -94,9 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
             loadMoreTracks();
         }
         
-        // スマホ時、下にスクロールでプレイヤーを最小化
+        // スマホ時、スクロールでプレイヤーを最小化
         if (window.innerWidth <= 900) {
-            if (trackListEl.scrollTop > 30) {
+            if (trackListEl.scrollTop > 20) {
                 document.body.classList.add('player-minimized');
             } else {
                 document.body.classList.remove('player-minimized');
@@ -152,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ============================================
-// 3. API読み込みと設定管理
+// 3. API読み込み・設定管理・DnD
 // ============================================
 function loadYouTubeAPI() {
     if (!window.YT) {
@@ -165,7 +166,7 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v12');
+        const saved = localStorage.getItem('cms_player_settings_v13');
         if (saved) {
             appSettings = { ...defaultSettings, ...JSON.parse(saved) };
             if (!appSettings.layoutPC) appSettings.layoutPC = defaultSettings.layoutPC;
@@ -181,7 +182,7 @@ function loadSettings() {
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v12', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v13', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -192,7 +193,6 @@ function applyThemeSettings() {
     document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
     
-    // リスト表示状態の引き継ぎ (PCシンプルモード時)
     if (appSettings.simpleLayoutMode && isListVisible) {
         document.body.classList.add('list-visible');
         document.getElementById('toggle-list-text').textContent = 'リストを隠す';
@@ -227,9 +227,9 @@ function applyThemeSettings() {
     document.documentElement.style.setProperty('--panel-blur', `${op * 20}px`);
 }
 
-// 🌟 PCレイアウトの自由配置 (DOM移動)
+// 🌟 PCレイアウトの適用
 function applyPCLayoutDOM() {
-    if (window.innerWidth <= 900) return; // モバイルはCSS側で処理するため無視
+    if (window.innerWidth <= 900) return;
 
     const col1 = document.getElementById('pc-col-1');
     const col2 = document.getElementById('pc-col-2');
@@ -252,6 +252,75 @@ function applyPCLayoutDOM() {
     });
 }
 
+// 🌟 PC画面上での直感的なドラッグ＆ドロップ実装
+function initMainDnDUI() {
+    const draggables = document.querySelectorAll('.layout-block');
+    const columns = document.querySelectorAll('.pc-column');
+    
+    draggables.forEach(draggable => {
+        const handle = draggable.querySelector('.drag-handle');
+        if(handle) {
+            handle.addEventListener('mousedown', () => { draggable.setAttribute('draggable', 'true'); });
+            handle.addEventListener('mouseup', () => { draggable.setAttribute('draggable', 'false'); });
+        }
+
+        draggable.addEventListener('dragstart', () => {
+            draggable.classList.add('dragging');
+        });
+
+        draggable.addEventListener('dragend', () => {
+            draggable.classList.remove('dragging');
+            draggable.setAttribute('draggable', 'false');
+            saveMainLayout(); // 配置を保存
+        });
+    });
+
+    columns.forEach(column => {
+        column.addEventListener('dragover', e => {
+            e.preventDefault();
+            if (window.innerWidth <= 900) return; // スマホ時は無効
+            
+            const afterElement = getDragAfterElement(column, e.clientY);
+            const draggable = document.querySelector('.dragging');
+            if (draggable) {
+                if (afterElement == null) {
+                    column.appendChild(draggable);
+                } else {
+                    column.insertBefore(draggable, afterElement);
+                }
+            }
+        });
+    });
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements =[...container.querySelectorAll('.layout-block:not(.dragging)')];
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function saveMainLayout() {
+    const col1Items = document.querySelectorAll('#pc-col-1 .layout-block');
+    const col2Items = document.querySelectorAll('#pc-col-2 .layout-block');
+
+    col1Items.forEach((el, idx) => {
+        const id = el.id.replace('widget-', '');
+        if(appSettings.layoutPC[id]) appSettings.layoutPC[id] = { col: 1, order: idx + 1 };
+    });
+    col2Items.forEach((el, idx) => {
+        const id = el.id.replace('widget-', '');
+        if(appSettings.layoutPC[id]) appSettings.layoutPC[id] = { col: 2, order: idx + 1 };
+    });
+    saveSettings();
+}
+
 function resizeAndSaveImage(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -268,81 +337,6 @@ function resizeAndSaveImage(file, callback) {
         img.src = e.target.result;
     }
     reader.readAsDataURL(file);
-}
-
-// 🌟 DnD (ドラッグ＆ドロップ) UIの初期化
-function initDndUI() {
-    const col1 = document.getElementById('dnd-col-1');
-    const col2 = document.getElementById('dnd-col-2');
-    col1.innerHTML = '<div class="dnd-header">左カラム</div>';
-    col2.innerHTML = '<div class="dnd-header">右カラム</div>';
-
-    const items = {
-        player: '動画プレイヤー',
-        controls: '操作パネル',
-        clock: '時計',
-        library: 'リスト(Library)'
-    };
-
-    const layoutArr = Object.keys(appSettings.layoutPC).map(k => ({ id: k, ...appSettings.layoutPC[k] }));
-    layoutArr.sort((a,b) => a.order - b.order);
-
-    layoutArr.forEach(lItem => {
-        const label = items[lItem.id];
-        if(!label) return;
-        const el = document.createElement('div');
-        el.className = 'dnd-item';
-        el.draggable = true;
-        el.dataset.id = lItem.id;
-        el.textContent = label;
-
-        el.addEventListener('dragstart', function() {
-            setTimeout(() => this.classList.add('dragging'), 0);
-        });
-        el.addEventListener('dragend', function() {
-            this.classList.remove('dragging');
-        });
-
-        if(lItem.col === 1) col1.appendChild(el);
-        else col2.appendChild(el);
-    });
-
-    [col1, col2].forEach(col => {
-        col.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            const afterElement = getDragAfterElement(this, e.clientY);
-            const draggable = document.querySelector('.dragging');
-            if (draggable) {
-                if (afterElement == null) this.appendChild(draggable);
-                else this.insertBefore(draggable, afterElement);
-            }
-        });
-    });
-}
-
-function getDragAfterElement(container, y) {
-    const draggableElements =[...container.querySelectorAll('.dnd-item:not(.dragging)')];
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
-function saveDndUI() {
-    const col1Items = document.querySelectorAll('#dnd-col-1 .dnd-item');
-    const col2Items = document.querySelectorAll('#dnd-col-2 .dnd-item');
-
-    col1Items.forEach((el, idx) => {
-        appSettings.layoutPC[el.dataset.id] = { col: 1, order: idx + 1 };
-    });
-    col2Items.forEach((el, idx) => {
-        appSettings.layoutPC[el.dataset.id] = { col: 2, order: idx + 1 };
-    });
 }
 
 function setupSettingsModal() {
@@ -366,8 +360,6 @@ function setupSettingsModal() {
         document.getElementById('set-use-custom-color').checked = appSettings.customColorEnabled;
         document.getElementById('set-accent-color').value = appSettings.customAccentColor;
         document.getElementById('set-border-color').value = appSettings.customBorderColor;
-        
-        initDndUI(); // DnDエリアを初期化
         modal.classList.remove('hidden');
     };
 
@@ -391,7 +383,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v12');
+            localStorage.removeItem('cms_player_settings_v13');
             location.reload();
         }
     };
@@ -432,12 +424,9 @@ function setupSettingsModal() {
         appSettings.customAccentColor = document.getElementById('set-accent-color').value;
         appSettings.customBorderColor = document.getElementById('set-border-color').value;
 
-        saveDndUI(); // DnDレイアウトを保存
         saveSettings();
-        
         modal.classList.add('hidden');
         applyThemeSettings();
-        applyPCLayoutDOM(); // 保存後にDOM移動を反映
         scheduleMarqueeUpdate(); 
     };
 }
@@ -604,7 +593,7 @@ function buildLibrary() {
 
 // 🌟 ソート処理の実装
 function sortSongs(songs) {
-    return [...songs].sort((a, b) => {
+    return[...songs].sort((a, b) => {
         const safeStr = (s) => s || "";
         switch (currentSortOrder) {
             case 'title_asc': return safeStr(a.title).localeCompare(safeStr(b.title));
@@ -731,7 +720,7 @@ function loadMoreTracks() {
     scheduleMarqueeUpdate();
 }
 
-// 🌟 全体スクロールバグを回避するUI更新ロジック
+// 🌟 スクロールバグを回避するUI更新ロジック
 function updateActiveTrackUI() {
     if (currentPlayingItem && currentRenderSongs) {
         const activeIndex = currentRenderSongs.findIndex(s => s === currentPlayingItem);
@@ -758,15 +747,17 @@ function updateActiveTrackUI() {
             activeEl.querySelector('.w-t-idx').classList.add('hidden');
             activeEl.querySelector('.w-t-playing-icon').classList.remove('hidden');
             
-            // 親コンテナ (trackListEl) の中だけでスクロールさせる
-            const containerTop = trackListEl.scrollTop;
-            const containerHeight = trackListEl.clientHeight;
-            const elementTop = activeEl.offsetTop - trackListEl.offsetTop; 
-            const elementHeight = activeEl.clientHeight;
-            
-            if (elementTop < containerTop || elementTop + elementHeight > containerTop + containerHeight) {
-                trackListEl.scrollTo({ top: elementTop - (containerHeight / 2) + (elementHeight / 2), behavior: 'smooth' });
-            }
+            // レイアウトの変動(最小化など)を待つために少し遅延させる
+            setTimeout(() => {
+                const containerTop = trackListEl.scrollTop;
+                const containerHeight = trackListEl.clientHeight;
+                const elementTop = activeEl.offsetTop; 
+                const elementHeight = activeEl.clientHeight;
+                
+                if (elementTop < containerTop || elementTop + elementHeight > containerTop + containerHeight) {
+                    trackListEl.scrollTo({ top: elementTop - (containerHeight / 2) + (elementHeight / 2), behavior: 'smooth' });
+                }
+            }, 150);
         }
     }
 }
