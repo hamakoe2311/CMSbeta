@@ -76,6 +76,12 @@
                     <div id="clock-date">----/--/--</div>
                     <div id="clock-time" class="theme-text">00:00:00</div>
                 </div>
+                <!-- PCシンプルモード用: リスト表示切替ボタン -->
+                <div id="list-toggle-wrapper">
+                    <button id="btn-toggle-list" title="リストの表示/非表示">
+                        <i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span>
+                    </button>
+                </div>
             </div>
 
             <!-- [2] 動画プレイヤー -->
@@ -119,9 +125,26 @@
                 </div>
             </div>
 
-            <!-- [4] ライブラリ (検索・フォルダ・リスト) -->
+            <!--[4] ライブラリ (検索・フォルダ・リスト) -->
             <div id="widget-library" class="layout-block">
                 
+                <!-- モバイル特化用 ツール (フォルダ選択 & 検索トグル) -->
+                <div id="mobile-tools-wrapper">
+                    <div class="current-folder-info panel-glass" id="btn-open-mobile-folder">
+                        <div style="display:flex; align-items: center; padding: 15px;">
+                            <i class="fas fa-play-circle" style="font-size: 1.8rem; margin-right: 15px; color: var(--text-color);"></i>
+                            <div style="display:flex; flex-direction:column; flex:1;">
+                                <span id="current-folder-name" style="font-weight:bold; font-size:1.1rem;">All</span>
+                                <span style="font-size:0.8rem; opacity:0.8;" id="current-folder-count">--件のアイテム</span>
+                            </div>
+                            <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">フォルダ</span>
+                        </div>
+                    </div>
+                    <button id="btn-toggle-mobile-nav" class="panel-glass" title="検索・ソートを表示">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+
                 <div id="library-nav-wrapper" class="panel-glass">
                     <!--<h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>-->
                     <div class="controls-wrapper">
@@ -137,19 +160,6 @@
                             <option value="title_desc">🔤 名前 (Z-A)</option>
                         </select>
                         <input type="text" id="widget-search-box" class="widget-search" placeholder="Search...">
-                    </div>
-                </div>
-
-                <div id="mobile-folder-selector">
-                    <div class="current-folder-info panel-glass" id="btn-open-mobile-folder">
-                        <div style="display:flex; align-items: center; padding: 15px;">
-                            <i class="fas fa-play-circle" style="font-size: 1.8rem; margin-right: 15px; color: var(--text-color);"></i>
-                            <div style="display:flex; flex-direction:column; flex:1;">
-                                <span id="current-folder-name" style="font-weight:bold; font-size:1.1rem;">All</span>
-                                <span style="font-size:0.8rem; opacity:0.8;" id="current-folder-count">--件のアイテム</span>
-                            </div>
-                            <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">フォルダ変更</span>
-                        </div>
                     </div>
                 </div>
 
@@ -223,26 +233,18 @@
                     </div>
                 </div>
 
+                <!-- 🌟 ドラッグ＆ドロップ設定 UI -->
                 <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
                     <label style="color: #00aaff; font-size: 1rem;"><i class="fas fa-table"></i> PCレイアウト自由配置</label>
-                    <span style="font-size:0.75rem; opacity:0.8; margin-bottom: 5px;">各要素の配置カラム（左・右）と順番（1〜4）を設定できます。</span>
+                    <span style="font-size:0.75rem; opacity:0.8; margin-bottom: 5px;">要素をドラッグ＆ドロップして配置・順番を変更できます。</span>
                     
-                    <div class="layout-config-grid">
-                        <span>動画プレイヤー</span>
-                        <select id="lay-player-col" class="widget-search"><option value="1">左</option><option value="2">右</option></select>
-                        <input type="number" id="lay-player-order" class="widget-search" min="1" max="4">
-                        
-                        <span>操作パネル</span>
-                        <select id="lay-controls-col" class="widget-search"><option value="1">左</option><option value="2">右</option></select>
-                        <input type="number" id="lay-controls-order" class="widget-search" min="1" max="4">
-                        
-                        <span>時計</span>
-                        <select id="lay-clock-col" class="widget-search"><option value="1">左</option><option value="2">右</option></select>
-                        <input type="number" id="lay-clock-order" class="widget-search" min="1" max="4">
-                        
-                        <span>リスト(Library)</span>
-                        <select id="lay-library-col" class="widget-search"><option value="1">左</option><option value="2">右</option></select>
-                        <input type="number" id="lay-library-order" class="widget-search" min="1" max="4">
+                    <div class="layout-config-dnd">
+                        <div class="dnd-column" id="dnd-col-1">
+                            <div class="dnd-header">左カラム</div>
+                        </div>
+                        <div class="dnd-column" id="dnd-col-2">
+                            <div class="dnd-header">右カラム</div>
+                        </div>
                     </div>
                 </div>
 
@@ -274,6 +276,16 @@
                 <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
                     <label style="color: #ffaa00;"><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
                     <span style="font-size:0.75rem; opacity:0.8;">※ぼかし効果やアニメーションが停止します。</span>
+                </div>
+                
+                <div class="setting-row" style="margin-top: 5px;">
+                    <label><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※リストや検索を隠し、ボタンで開閉できるようにします。</span>
+                </div>
+
+                <div class="setting-row" style="margin-top: 5px;">
+                    <label><input type="checkbox" id="set-mobile-ui"> 📱 操作性UP (スマホ特化レイアウト)</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※モバイル環境での利用に特化したデザインにします。</span>
                 </div>
                 
                 <div class="setting-row">
