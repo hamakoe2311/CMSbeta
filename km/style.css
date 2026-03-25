@@ -28,7 +28,6 @@ body.theme-toyota {
     --font-family: "Meiryo", "Hiragino Kaku Gothic Pro", sans-serif;
 }
 
-/* エヴァ風テーマのフォントを明朝体・極太に修正 */
 body.theme-nerv {
     --bg-color: #000;
     --panel-rgb: 0, 0, 0;
@@ -121,68 +120,44 @@ body.performance-mode .boot-skip-hint, body.performance-mode .modern-spinner, bo
 @keyframes pulse-icon { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* =========================================
-   メインレイアウト設定
+   メインレイアウト設定 (自由配置対応)
    ========================================= */
+.widget-container { display: flex; width: 100%; height: 100%; }
+
+/* PC用 カラムベースレイアウト */
+@media (min-width: 901px) {
+    .widget-container {
+        display: grid; grid-template-columns: var(--pc-left-width) 1fr;
+        gap: 15px; width: 95vw; max-width: 1500px; height: 95vh; margin: 2.5vh auto;
+    }
+    .pc-column { display: flex; flex-direction: column; gap: 15px; height: 100%; min-height: 0; }
+    
+    /* 音楽モード時、プレイヤーの枠ごと消す */
+    body.music-mode #widget-player { display: none !important; }
+}
+
 #clock-widget { display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;}
 .clock-inner { display: flex; flex-direction: column; width: 100%; max-width: 250px; }
 #clock-date { font-size: 1.2rem; font-weight: bold; text-align: left; margin-bottom: 5px; opacity: 0.9; }
 #clock-time { font-size: 2.8rem; font-weight: bold; letter-spacing: 2px; line-height: 1; text-align: right; }
 body:not(.show-clock) .clock-inner { display: none !important; }
 
-/* 動画非表示設定 */
-body.music-mode #player-wrapper { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden; opacity: 0; pointer-events: none; }
 #mobile-folder-selector { display: none; }
 #list-toggle-wrapper { display: none; }
 
-/* トランジション */
-#player-wrapper, #player-controls-wrapper, .widget-art, .player-controls-inner, .widget-info-container { transition: all 0.3s ease; }
 
-/* --- デスクトップ & iPad用レイアウト (通常モード) --- */
+/* --- デスクトップ & iPad用 内部スタイル --- */
 @media (min-width: 901px) {
-    #main-app { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+    #widget-player { width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; }
+    #widget-controls { display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; flex-shrink: 0;}
+    #widget-clock { padding: 15px; justify-content: flex-start; flex-shrink: 0;}
     
-    /* 🔴 通常モード */
-    body:not(.simple-layout-mode) .widget-container {
-        display: grid; grid-template-columns: var(--pc-left-width) 220px 1fr; grid-template-rows: auto auto 1fr;
-        gap: 15px; width: 95vw; max-width: 1500px; height: 95vh;
-    }
-    body:not(.simple-layout-mode) #clock-widget { grid-column: 1 / 2; grid-row: 1 / 2; padding: 15px; }
-    body:not(.simple-layout-mode) #library-nav-wrapper { grid-column: 2 / 4; grid-row: 1 / 2; display: flex; align-items: center; padding: 10px 20px; }
-    body:not(.simple-layout-mode) #player-wrapper { grid-column: 1 / 2; grid-row: 2 / 3; width: 100%; aspect-ratio: 16 / 9; }
-    body:not(.simple-layout-mode) #player-controls-wrapper { grid-column: 1 / 2; grid-row: 3 / 4; display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; }
-    body:not(.simple-layout-mode) #widget-folder-list-wrapper { grid-column: 2 / 3; grid-row: 2 / 4; display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
-    body:not(.simple-layout-mode) #widget-track-list-wrapper { grid-column: 3 / 4; grid-row: 2 / 4; display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
-
-    /* 🔵 シンプルレイアウトモード */
-    body.simple-layout-mode .widget-container {
-        display: grid; grid-template-columns: var(--pc-left-width) 1fr; grid-template-rows: auto auto 1fr;
-        gap: 15px; width: 95vw; max-width: 1500px; height: 95vh;
-    }
-    body.simple-layout-mode.list-visible .widget-container { grid-template-columns: var(--pc-left-width) 220px 1fr; }
+    #widget-library { display: flex; flex-direction: column; gap: 15px; flex: 1; min-height: 0; }
+    #library-nav-wrapper { display: flex; align-items: center; padding: 10px 20px; flex-shrink: 0; }
     
-    body.simple-layout-mode #player-wrapper { grid-column: 1 / 2; grid-row: 1 / 2; width: 100%; aspect-ratio: 16 / 9; }
-    body.simple-layout-mode #player-controls-wrapper { grid-column: 1 / 2; grid-row: 2 / 3; display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; }
-    body.simple-layout-mode #clock-widget { grid-column: 1 / 2; grid-row: 3 / 4; padding: 15px; justify-content: flex-start;}
-    
-    body.simple-layout-mode:not(.list-visible) #library-nav-wrapper,
-    body.simple-layout-mode:not(.list-visible) #widget-folder-list-wrapper,
-    body.simple-layout-mode:not(.list-visible) #widget-track-list-wrapper { display: none; }
-    
-    body.simple-layout-mode.list-visible #library-nav-wrapper { display: flex; grid-column: 2 / 4; grid-row: 1 / 2; align-items: center; padding: 10px 20px; }
-    body.simple-layout-mode.list-visible #widget-folder-list-wrapper { display: flex; grid-column: 2 / 3; grid-row: 2 / 4; flex-direction: column; overflow: hidden; padding: 15px 0; }
-    body.simple-layout-mode.list-visible #widget-track-list-wrapper { display: flex; grid-column: 3 / 4; grid-row: 2 / 4; flex-direction: column; overflow: hidden; padding: 15px 0; }
+    .library-lists-container { display: grid; grid-template-columns: 220px 1fr; gap: 15px; flex: 1; min-height: 0; overflow: hidden; }
+    #widget-folder-list-wrapper, #widget-track-list-wrapper { display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
 
-    /* リスト表示切替ボタン (時計ウィジェット内・目立たないデザイン) */
-    body.simple-layout-mode #list-toggle-wrapper { display: flex; align-items: center; width: 100%; margin-top: 15px; justify-content: center;}
-    #btn-toggle-list {
-        background: transparent; border: none; color: var(--sub-text-color); cursor: pointer;
-        font-size: 0.95rem; padding: 5px 15px; display: flex; align-items: center; gap: 8px; transition: 0.3s;
-    }
-    #btn-toggle-list:hover { color: var(--text-color); }
-
-    body.simple-layout-mode.music-mode .widget-container { grid-template-rows: 0px auto 1fr; }
-
-    /* PC共通 内部コンポーネント */
     .player-controls-inner { display: flex; flex-direction: column; align-items: center; width: 100%; text-align: center; }
     .widget-art { width: 160px; height: 160px; margin-bottom: 20px; border-radius: calc(var(--border-radius) / 2); object-fit: cover; border: 1px solid var(--border-color); }
     .widget-info-container { width: 100%; display: flex; flex-direction: column; gap: 10px; }
@@ -191,8 +166,6 @@ body.music-mode #player-wrapper { position: absolute !important; width: 1px !imp
     .controls-main { display: flex; gap: 20px; align-items: center; }
     .settings-btn { position: absolute; right: 0; }
 
-    body.music-mode:not(.simple-layout-mode) .widget-container { grid-template-rows: auto 1fr; }
-    body.music-mode:not(.simple-layout-mode) #player-controls-wrapper { grid-row: 2 / 4; }
     body.music-mode .widget-art { width: 220px; height: 220px; }
 }
 
@@ -202,49 +175,56 @@ body.music-mode #player-wrapper { position: absolute !important; width: 1px !imp
     #clock-widget .clock-inner { align-items: center; max-width: none; }
     #clock-date, #clock-time { text-align: center; }
 
+    /* モバイルではカラムを解除し、flexのorderで並べ替えるため display: contents を使用 */
     .widget-container { display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; gap: 0; }
+    .pc-column { display: contents; }
+    
     .panel-glass { border-radius: 0; border: none; box-shadow: none; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;}
     
-    #clock-widget { order: 1; padding: 10px; flex-shrink: 0; }
-    #player-wrapper { order: 2; width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; }
+    #widget-clock { order: 1; padding: 10px; flex-shrink: 0; }
+    
+    /* 動画非表示(音楽モード)の場合は完全に消す */
+    body.music-mode #widget-player { display: none !important; }
+    #widget-player { order: 2; width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; }
     
     /* 動画が表示されている時はアートワーク(サムネ)を隠し、スペースを確保 */
     body:not(.music-mode) .widget-art { display: none; }
 
-    #player-controls-wrapper { order: 3; padding: 15px; flex-shrink: 0; }
+    #widget-controls { order: 3; padding: 15px; flex-shrink: 0; }
     .player-controls-inner { flex-direction: column; align-items: center; text-align: center; gap: 10px; width: 100%; }
     
-    /* アートワークのサイズを最適化 */
     .widget-art { width: 45vw; max-width: 250px; height: 45vw; max-height: 250px; border-radius: 12px; margin: 0 auto; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5); cursor: pointer;}
-    
     .widget-info-container { width: 100%; max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; cursor: pointer; }
     .widget-info h2 { font-size: 1.2rem; }
     .widget-info p { font-size: 1rem; opacity: 0.8;}
     .progress-area { margin: 10px 0; }
     
-    /* ボタンのレイアウト修正 (中央に均等配置) */
     .widget-controls { display: flex; justify-content: center; align-items: center; width: 100%; position: relative; }
     .controls-main { display: flex; justify-content: center; align-items: center; gap: 8vw; }
     .widget-controls button { padding: 8px; font-size: 1.5rem; flex-shrink: 0; }
     .widget-controls .play-btn { width: 65px; height: 65px; font-size: 1.8rem; }
     .settings-btn { position: absolute; right: 0; }
     
+    #widget-library { order: 4; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+    
     #library-nav-wrapper { display: none; }
     #widget-folder-list-wrapper { display: none; }
     
-    #mobile-folder-selector { display: block; order: 4; margin-top: 5px; flex-shrink: 0; }
+    #mobile-folder-selector { display: block; flex-shrink: 0; margin-top: 5px; }
     #mobile-folder-selector .panel-glass { background: rgba(255,255,255,0.05); border-radius: 12px; margin: 0 15px; cursor: pointer; border: 1px solid var(--border-color); }
 
-    /* トラックリスト内部のみスクロール可能にする */
+    .library-lists-container { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+    
+    /* トラックリスト内部のみスクロール可能にする (全体スクロール防止) */
     #widget-track-list-wrapper { 
-        order: 5; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; margin-top: 10px; overflow: hidden;
+        flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; margin-top: 10px; overflow: hidden;
     }
     .w-track-list { flex: 1; overflow-y: auto; padding: 0 15px 20px 15px; }
     .w-t-item { padding: 12px 20px; border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
     /* 📱 スクロール時のプレイヤー最小化 (player-minimized) */
-    body.player-minimized #player-wrapper { height: 0; padding: 0; margin: 0; border: none; overflow: hidden; opacity: 0;}
-    body.player-minimized #player-controls-wrapper { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: rgba(var(--panel-rgb), 0.9); }
+    body.player-minimized #widget-player { height: 0; padding: 0; margin: 0; border: none; overflow: hidden; opacity: 0;}
+    body.player-minimized #widget-controls { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: rgba(var(--panel-rgb), 0.9); }
     body.player-minimized .player-controls-inner { flex-direction: row; gap: 15px; justify-content: space-between; }
     body.player-minimized .widget-art { width: 45px; height: 45px; margin: 0; border-radius: 6px; box-shadow: none; display: block !important; flex-shrink: 0; }
     body.player-minimized .widget-info-container { flex: 1; flex-direction: row; align-items: center; justify-content: space-between; margin: 0; gap: 10px; }
@@ -258,7 +238,7 @@ body.music-mode #player-wrapper { position: absolute !important; width: 1px !imp
     body.player-minimized .widget-controls button:not(.play-btn):not(#widget-btn-next) { display: none; }
     body.player-minimized .widget-controls #widget-btn-next { display: block; font-size: 1.2rem; padding: 5px; }
     body.player-minimized .settings-btn { display: none; }
-    body.player-minimized #clock-widget { display: none; }
+    body.player-minimized #widget-clock { display: none; }
 }
 
 
@@ -288,7 +268,7 @@ body.theme-nerv .widget-controls .play-btn { border-radius: 0; border: 1px solid
 select.widget-search option { background-color: var(--bg-color); color: var(--text-color); }
 
 .w-folder-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; height: 100%; padding: 0 15px; }
-.w-track-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; height: 100%; padding: 0 15px; }
+.w-track-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; height: 100%; padding: 0 15px; position: relative; }
 
 .w-f-item { padding: 12px 15px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; font-size: 0.95rem; flex-shrink: 0; white-space: nowrap; color: var(--text-color); }
 .w-f-item:hover { background: rgba(128,128,128,0.2); }
@@ -328,7 +308,7 @@ body.show-list-thumbnails .w-t-thumb { display: block; }
     85%, 100% { transform: translateX(0); }
 }
 
-/* === Settings Modal & Checkbox Fix === */
+/* === Settings Modal === */
 .settings-window { width: 500px; max-width: 90%; padding: 30px; display: flex; flex-direction: column; gap: 15px; }
 .setting-scroll-area { max-height: 60vh; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 10px; }
 .setting-row { display: flex; flex-direction: column; gap: 5px; }
@@ -340,6 +320,9 @@ body.show-list-thumbnails .w-t-thumb { display: block; }
 .setting-row input[type="file"]::file-selector-button { background: var(--text-color); color: #000; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-right: 10px; }
 .setting-row input[type="range"] { accent-color: var(--text-color); }
 
+/* レイアウト設定用グリッド */
+.layout-config-grid { display: grid; grid-template-columns: 1fr 60px 60px; gap: 8px; align-items: center; font-size: 0.85rem; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;}
+
 /* 🌟 iOS対応 カスタムチェックボックス */
 input[type="checkbox"] { 
     appearance: none; -webkit-appearance: none;
@@ -350,7 +333,7 @@ input[type="checkbox"]:checked {
     background-color: var(--text-color); border-color: var(--text-color);
 }
 input[type="checkbox"]:checked::after {
-    content: ''; position: absolute; top: 1px; left: 5px; width: 4px; height: 10px;
+    content: ''; position: absolute; top: 1px; left: 5px; width: 5px; height: 11px;
     border: solid var(--bg-color); border-width: 0 2px 2px 0; transform: rotate(45deg);
 }
 
