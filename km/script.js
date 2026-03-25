@@ -14,22 +14,24 @@ const defaultSettings = {
     musicMode: false,
     showClock: true,
     showThumbnails: true,
+    mobileOptimizedUI: true,  // 廃止予定だが互換のため残す
+    simpleLayoutMode: false,   
     performanceMode: false,
     customColorEnabled: false,
     customAccentColor: '#00aaff',
     customBorderColor: '#ffffff',
     
-    // PC向け 自由レイアウト設定
+    // PC向け 自由レイアウト設定 (初期値)
     layoutPC: {
-        player:   { col: 1, order: 1 },
-        controls: { col: 1, order: 2 },
-        clock:    { col: 1, order: 3 },
+        clock:    { col: 1, order: 1 },
+        player:   { col: 1, order: 2 },
+        controls: { col: 1, order: 3 },
         library:  { col: 2, order: 1 }
     }
 };
 let appSettings = { ...defaultSettings };
 
-let allItems =[];
+let allItems = [];
 let folderSettings =[];
 let musicLibrary =[];
 let currentFolderId = null;
@@ -44,6 +46,7 @@ let currentPlayingItem = null;
 
 let ytPlayer = null;
 let isTransitioning = false;
+let isListVisible = false;
 
 let bootTimeoutId;
 let toyotaStepTimeoutId;
@@ -74,7 +77,7 @@ const nicoCheckbox = document.getElementById('exclude-nico');
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     applyThemeSettings();
-    applyPCLayoutDOM(); // レイアウトの適用
+    applyPCLayoutDOM(); // PCレイアウトの適用
 
     updateClock();
     setInterval(updateClock, 1000);
@@ -91,9 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
             loadMoreTracks();
         }
         
-        // スマホ時、スクロールでプレイヤーを最小化
+        // スマホ時、下にスクロールでプレイヤーを最小化
         if (window.innerWidth <= 900) {
-            if (trackListEl.scrollTop > 20) {
+            if (trackListEl.scrollTop > 30) {
                 document.body.classList.add('player-minimized');
             } else {
                 document.body.classList.remove('player-minimized');
@@ -122,11 +125,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('widget-btn-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('progress-container').addEventListener('click', handleProgressClick);
 
+    // スマホ用 モーダル&トグル
     document.getElementById('btn-open-mobile-folder').addEventListener('click', () => {
         document.getElementById('mobile-folder-modal').classList.remove('hidden');
     });
     document.getElementById('btn-close-folder-modal').addEventListener('click', () => {
         document.getElementById('mobile-folder-modal').classList.add('hidden');
+    });
+    document.getElementById('btn-toggle-mobile-nav').addEventListener('click', () => {
+        document.body.classList.toggle('show-mobile-nav');
+    });
+
+    // PC用 リスト表示トグル
+    document.getElementById('btn-toggle-list').addEventListener('click', () => {
+        isListVisible = !isListVisible;
+        document.body.classList.toggle('list-visible', isListVisible);
+        const textSpan = document.getElementById('toggle-list-text');
+        textSpan.textContent = isListVisible ? 'リストを隠す' : 'リストを表示';
+        scheduleMarqueeUpdate();
     });
 
     setupPlayerControls();
@@ -149,7 +165,7 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v11');
+        const saved = localStorage.getItem('cms_player_settings_v12');
         if (saved) {
             appSettings = { ...defaultSettings, ...JSON.parse(saved) };
             if (!appSettings.layoutPC) appSettings.layoutPC = defaultSettings.layoutPC;
@@ -165,7 +181,7 @@ function loadSettings() {
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v11', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v12', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -173,7 +189,17 @@ function applyThemeSettings() {
     document.body.classList.toggle('music-mode', appSettings.musicMode);
     document.body.classList.toggle('show-list-thumbnails', appSettings.showThumbnails);
     document.body.classList.toggle('show-clock', appSettings.showClock);
+    document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
+    
+    // リスト表示状態の引き継ぎ (PCシンプルモード時)
+    if (appSettings.simpleLayoutMode && isListVisible) {
+        document.body.classList.add('list-visible');
+        document.getElementById('toggle-list-text').textContent = 'リストを隠す';
+    } else {
+        document.body.classList.remove('list-visible');
+        document.getElementById('toggle-list-text').textContent = 'リストを表示';
+    }
     
     document.documentElement.style.setProperty('--base-font-size', `${appSettings.baseFontSize}%`);
     document.documentElement.style.setProperty('--pc-left-width', `${appSettings.pcLeftWidth}px`);
@@ -203,6 +229,8 @@ function applyThemeSettings() {
 
 // 🌟 PCレイアウトの自由配置 (DOM移動)
 function applyPCLayoutDOM() {
+    if (window.innerWidth <= 900) return; // モバイルはCSS側で処理するため無視
+
     const col1 = document.getElementById('pc-col-1');
     const col2 = document.getElementById('pc-col-2');
     
@@ -218,7 +246,7 @@ function applyPCLayoutDOM() {
     
     layoutArr.forEach(item => {
         if (elements[item.id]) {
-            if(item.col == 1) col1.appendChild(elements[item.id]);
+            if(item.col === 1) col1.appendChild(elements[item.id]);
             else col2.appendChild(elements[item.id]);
         }
     });
@@ -242,6 +270,81 @@ function resizeAndSaveImage(file, callback) {
     reader.readAsDataURL(file);
 }
 
+// 🌟 DnD (ドラッグ＆ドロップ) UIの初期化
+function initDndUI() {
+    const col1 = document.getElementById('dnd-col-1');
+    const col2 = document.getElementById('dnd-col-2');
+    col1.innerHTML = '<div class="dnd-header">左カラム</div>';
+    col2.innerHTML = '<div class="dnd-header">右カラム</div>';
+
+    const items = {
+        player: '動画プレイヤー',
+        controls: '操作パネル',
+        clock: '時計',
+        library: 'リスト(Library)'
+    };
+
+    const layoutArr = Object.keys(appSettings.layoutPC).map(k => ({ id: k, ...appSettings.layoutPC[k] }));
+    layoutArr.sort((a,b) => a.order - b.order);
+
+    layoutArr.forEach(lItem => {
+        const label = items[lItem.id];
+        if(!label) return;
+        const el = document.createElement('div');
+        el.className = 'dnd-item';
+        el.draggable = true;
+        el.dataset.id = lItem.id;
+        el.textContent = label;
+
+        el.addEventListener('dragstart', function() {
+            setTimeout(() => this.classList.add('dragging'), 0);
+        });
+        el.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+        });
+
+        if(lItem.col === 1) col1.appendChild(el);
+        else col2.appendChild(el);
+    });
+
+    [col1, col2].forEach(col => {
+        col.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            const afterElement = getDragAfterElement(this, e.clientY);
+            const draggable = document.querySelector('.dragging');
+            if (draggable) {
+                if (afterElement == null) this.appendChild(draggable);
+                else this.insertBefore(draggable, afterElement);
+            }
+        });
+    });
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements =[...container.querySelectorAll('.dnd-item:not(.dragging)')];
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function saveDndUI() {
+    const col1Items = document.querySelectorAll('#dnd-col-1 .dnd-item');
+    const col2Items = document.querySelectorAll('#dnd-col-2 .dnd-item');
+
+    col1Items.forEach((el, idx) => {
+        appSettings.layoutPC[el.dataset.id] = { col: 1, order: idx + 1 };
+    });
+    col2Items.forEach((el, idx) => {
+        appSettings.layoutPC[el.dataset.id] = { col: 2, order: idx + 1 };
+    });
+}
+
 function setupSettingsModal() {
     const modal = document.getElementById('settings-modal');
     
@@ -255,6 +358,7 @@ function setupSettingsModal() {
         document.getElementById('set-bg-size').value = appSettings.bgSize;
         document.getElementById('set-opacity').value = appSettings.bgOpacity;
         document.getElementById('op-val').textContent = appSettings.bgOpacity;
+        document.getElementById('set-simple-layout').checked = appSettings.simpleLayoutMode;
         document.getElementById('set-performance-mode').checked = appSettings.performanceMode;
         document.getElementById('set-music-mode').checked = appSettings.musicMode;
         document.getElementById('set-show-clock').checked = appSettings.showClock;
@@ -263,12 +367,7 @@ function setupSettingsModal() {
         document.getElementById('set-accent-color').value = appSettings.customAccentColor;
         document.getElementById('set-border-color').value = appSettings.customBorderColor;
         
-        // PCレイアウト設定 UIの反映
-        ['player', 'controls', 'clock', 'library'].forEach(id => {
-            document.getElementById(`lay-${id}-col`).value = appSettings.layoutPC[id].col;
-            document.getElementById(`lay-${id}-order`).value = appSettings.layoutPC[id].order;
-        });
-        
+        initDndUI(); // DnDエリアを初期化
         modal.classList.remove('hidden');
     };
 
@@ -292,7 +391,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v11');
+            localStorage.removeItem('cms_player_settings_v12');
             location.reload();
         }
     };
@@ -324,6 +423,7 @@ function setupSettingsModal() {
         appSettings.bgPosition = document.getElementById('set-bg-position').value;
         appSettings.bgSize = document.getElementById('set-bg-size').value;
         appSettings.bgOpacity = document.getElementById('set-opacity').value;
+        appSettings.simpleLayoutMode = document.getElementById('set-simple-layout').checked;
         appSettings.performanceMode = document.getElementById('set-performance-mode').checked;
         appSettings.musicMode = document.getElementById('set-music-mode').checked;
         appSettings.showClock = document.getElementById('set-show-clock').checked;
@@ -332,18 +432,12 @@ function setupSettingsModal() {
         appSettings.customAccentColor = document.getElementById('set-accent-color').value;
         appSettings.customBorderColor = document.getElementById('set-border-color').value;
 
-        // PCレイアウト設定 保存
-        ['player', 'controls', 'clock', 'library'].forEach(id => {
-            appSettings.layoutPC[id] = {
-                col: parseInt(document.getElementById(`lay-${id}-col`).value),
-                order: parseInt(document.getElementById(`lay-${id}-order`).value)
-            };
-        });
-
+        saveDndUI(); // DnDレイアウトを保存
         saveSettings();
+        
         modal.classList.add('hidden');
         applyThemeSettings();
-        applyPCLayoutDOM();
+        applyPCLayoutDOM(); // 保存後にDOM移動を反映
         scheduleMarqueeUpdate(); 
     };
 }
@@ -398,7 +492,7 @@ function handleFileImport(event) {
             const data = JSON.parse(e.target.result);
             const mediaItems = Array.isArray(data) ? data : (data.mediaItems ||[]);
             
-            // ソート用にオリジナルインデックスと安全な日付を保存
+            // 🌟 ソート用のデータを補完
             allItems = mediaItems.filter(i => i.site !== 'system').map((item, idx) => ({
                 ...item,
                 originalIndex: idx,
@@ -508,6 +602,7 @@ function buildLibrary() {
     ];
 }
 
+// 🌟 ソート処理の実装
 function sortSongs(songs) {
     return [...songs].sort((a, b) => {
         const safeStr = (s) => s || "";
@@ -559,7 +654,6 @@ function selectFolder(folderId) {
     document.querySelectorAll('.w-f-item').forEach(el => {
         const isActive = el.dataset.folderId === folderId;
         el.classList.toggle('active', isActive);
-        // PCでスクロールするロジックは削除 (表示崩れ防止)
     });
 
     document.querySelectorAll('.m-f-item').forEach(el => {
@@ -637,7 +731,7 @@ function loadMoreTracks() {
     scheduleMarqueeUpdate();
 }
 
-// 🌟 全体スクロールバグ修正版
+// 🌟 全体スクロールバグを回避するUI更新ロジック
 function updateActiveTrackUI() {
     if (currentPlayingItem && currentRenderSongs) {
         const activeIndex = currentRenderSongs.findIndex(s => s === currentPlayingItem);
