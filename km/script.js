@@ -14,15 +14,22 @@ const defaultSettings = {
     musicMode: false,
     showClock: true,
     showThumbnails: true,
-    simpleLayoutMode: false,   
     performanceMode: false,
     customColorEnabled: false,
     customAccentColor: '#00aaff',
-    customBorderColor: '#ffffff'
+    customBorderColor: '#ffffff',
+    
+    // PC向け 自由レイアウト設定
+    layoutPC: {
+        player:   { col: 1, order: 1 },
+        controls: { col: 1, order: 2 },
+        clock:    { col: 1, order: 3 },
+        library:  { col: 2, order: 1 }
+    }
 };
 let appSettings = { ...defaultSettings };
 
-let allItems = [];
+let allItems =[];
 let folderSettings =[];
 let musicLibrary =[];
 let currentFolderId = null;
@@ -37,7 +44,6 @@ let currentPlayingItem = null;
 
 let ytPlayer = null;
 let isTransitioning = false;
-let isListVisible = false;
 
 let bootTimeoutId;
 let toyotaStepTimeoutId;
@@ -68,6 +74,7 @@ const nicoCheckbox = document.getElementById('exclude-nico');
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     applyThemeSettings();
+    applyPCLayoutDOM(); // レイアウトの適用
 
     updateClock();
     setInterval(updateClock, 1000);
@@ -86,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // スマホ時、スクロールでプレイヤーを最小化
         if (window.innerWidth <= 900) {
-            if (trackListEl.scrollTop > 30) {
+            if (trackListEl.scrollTop > 20) {
                 document.body.classList.add('player-minimized');
             } else {
                 document.body.classList.remove('player-minimized');
@@ -122,14 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('mobile-folder-modal').classList.add('hidden');
     });
 
-    document.getElementById('btn-toggle-list').addEventListener('click', () => {
-        isListVisible = !isListVisible;
-        document.body.classList.toggle('list-visible', isListVisible);
-        const textSpan = document.getElementById('toggle-list-text');
-        textSpan.textContent = isListVisible ? 'リストを隠す' : 'リストを表示';
-        scheduleMarqueeUpdate();
-    });
-
     setupPlayerControls();
     setupSettingsModal();
     window.addEventListener('message', handleNicoMessage);
@@ -150,21 +149,23 @@ function loadYouTubeAPI() {
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v10');
+        const saved = localStorage.getItem('cms_player_settings_v11');
         if (saved) {
             appSettings = { ...defaultSettings, ...JSON.parse(saved) };
+            if (!appSettings.layoutPC) appSettings.layoutPC = defaultSettings.layoutPC;
         } else {
-            // 初回起動時、モバイルなら自動で軽量化ON
+            // 初回起動時、モバイルなら自動で軽量化・時計非表示
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 900;
             if (isMobile) {
                 appSettings.performanceMode = true;
+                appSettings.showClock = false;
             }
         }
     } catch (e) { console.error("設定読み込みエラー", e); }
 }
 
 function saveSettings() {
-    localStorage.setItem('cms_player_settings_v10', JSON.stringify(appSettings));
+    localStorage.setItem('cms_player_settings_v11', JSON.stringify(appSettings));
 }
 
 function applyThemeSettings() {
@@ -172,16 +173,7 @@ function applyThemeSettings() {
     document.body.classList.toggle('music-mode', appSettings.musicMode);
     document.body.classList.toggle('show-list-thumbnails', appSettings.showThumbnails);
     document.body.classList.toggle('show-clock', appSettings.showClock);
-    document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
-    
-    if (appSettings.simpleLayoutMode && isListVisible) {
-        document.body.classList.add('list-visible');
-        document.getElementById('toggle-list-text').textContent = 'リストを隠す';
-    } else {
-        document.body.classList.remove('list-visible');
-        document.getElementById('toggle-list-text').textContent = 'リストを表示';
-    }
     
     document.documentElement.style.setProperty('--base-font-size', `${appSettings.baseFontSize}%`);
     document.documentElement.style.setProperty('--pc-left-width', `${appSettings.pcLeftWidth}px`);
@@ -207,6 +199,29 @@ function applyThemeSettings() {
     const op = parseFloat(appSettings.bgOpacity);
     document.documentElement.style.setProperty('--panel-alpha', op);
     document.documentElement.style.setProperty('--panel-blur', `${op * 20}px`);
+}
+
+// 🌟 PCレイアウトの自由配置 (DOM移動)
+function applyPCLayoutDOM() {
+    const col1 = document.getElementById('pc-col-1');
+    const col2 = document.getElementById('pc-col-2');
+    
+    const elements = {
+        player: document.getElementById('widget-player'),
+        controls: document.getElementById('widget-controls'),
+        clock: document.getElementById('widget-clock'),
+        library: document.getElementById('widget-library')
+    };
+    
+    const layoutArr = Object.keys(appSettings.layoutPC).map(k => ({ id: k, ...appSettings.layoutPC[k] }));
+    layoutArr.sort((a,b) => a.order - b.order);
+    
+    layoutArr.forEach(item => {
+        if (elements[item.id]) {
+            if(item.col == 1) col1.appendChild(elements[item.id]);
+            else col2.appendChild(elements[item.id]);
+        }
+    });
 }
 
 function resizeAndSaveImage(file, callback) {
@@ -240,7 +255,6 @@ function setupSettingsModal() {
         document.getElementById('set-bg-size').value = appSettings.bgSize;
         document.getElementById('set-opacity').value = appSettings.bgOpacity;
         document.getElementById('op-val').textContent = appSettings.bgOpacity;
-        document.getElementById('set-simple-layout').checked = appSettings.simpleLayoutMode;
         document.getElementById('set-performance-mode').checked = appSettings.performanceMode;
         document.getElementById('set-music-mode').checked = appSettings.musicMode;
         document.getElementById('set-show-clock').checked = appSettings.showClock;
@@ -248,6 +262,13 @@ function setupSettingsModal() {
         document.getElementById('set-use-custom-color').checked = appSettings.customColorEnabled;
         document.getElementById('set-accent-color').value = appSettings.customAccentColor;
         document.getElementById('set-border-color').value = appSettings.customBorderColor;
+        
+        // PCレイアウト設定 UIの反映
+        ['player', 'controls', 'clock', 'library'].forEach(id => {
+            document.getElementById(`lay-${id}-col`).value = appSettings.layoutPC[id].col;
+            document.getElementById(`lay-${id}-order`).value = appSettings.layoutPC[id].order;
+        });
+        
         modal.classList.remove('hidden');
     };
 
@@ -271,7 +292,7 @@ function setupSettingsModal() {
 
     document.getElementById('btn-reset-settings').onclick = () => {
         if (confirm('設定をすべて初期化してリロードしますか？')) {
-            localStorage.removeItem('cms_player_settings_v10');
+            localStorage.removeItem('cms_player_settings_v11');
             location.reload();
         }
     };
@@ -303,7 +324,6 @@ function setupSettingsModal() {
         appSettings.bgPosition = document.getElementById('set-bg-position').value;
         appSettings.bgSize = document.getElementById('set-bg-size').value;
         appSettings.bgOpacity = document.getElementById('set-opacity').value;
-        appSettings.simpleLayoutMode = document.getElementById('set-simple-layout').checked;
         appSettings.performanceMode = document.getElementById('set-performance-mode').checked;
         appSettings.musicMode = document.getElementById('set-music-mode').checked;
         appSettings.showClock = document.getElementById('set-show-clock').checked;
@@ -312,9 +332,18 @@ function setupSettingsModal() {
         appSettings.customAccentColor = document.getElementById('set-accent-color').value;
         appSettings.customBorderColor = document.getElementById('set-border-color').value;
 
+        // PCレイアウト設定 保存
+        ['player', 'controls', 'clock', 'library'].forEach(id => {
+            appSettings.layoutPC[id] = {
+                col: parseInt(document.getElementById(`lay-${id}-col`).value),
+                order: parseInt(document.getElementById(`lay-${id}-order`).value)
+            };
+        });
+
         saveSettings();
         modal.classList.add('hidden');
         applyThemeSettings();
+        applyPCLayoutDOM();
         scheduleMarqueeUpdate(); 
     };
 }
@@ -368,7 +397,15 @@ function handleFileImport(event) {
         try {
             const data = JSON.parse(e.target.result);
             const mediaItems = Array.isArray(data) ? data : (data.mediaItems ||[]);
-            allItems = mediaItems.filter(i => i.site !== 'system');
+            
+            // ソート用にオリジナルインデックスと安全な日付を保存
+            allItems = mediaItems.filter(i => i.site !== 'system').map((item, idx) => ({
+                ...item,
+                originalIndex: idx,
+                safeDate: item.savedAt ? new Date(item.savedAt).getTime() : 0,
+                safePlayCount: item.playCount || 0
+            }));
+            
             folderSettings = data.folderSettings ||[];
             
             if (allItems.length > 0) {
@@ -474,14 +511,13 @@ function buildLibrary() {
 function sortSongs(songs) {
     return [...songs].sort((a, b) => {
         const safeStr = (s) => s || "";
-        const getTime = (d) => d ? new Date(d).getTime() : 0;
         switch (currentSortOrder) {
             case 'title_asc': return safeStr(a.title).localeCompare(safeStr(b.title));
             case 'title_desc': return safeStr(b.title).localeCompare(safeStr(a.title));
-            case 'newest': return getTime(b.savedAt) - getTime(a.savedAt);
-            case 'oldest': return getTime(a.savedAt) - getTime(b.savedAt);
-            case 'playCount_desc': return (b.playCount || 0) - (a.playCount || 0);
-            case 'custom': default: return (a.order ?? getTime(a.savedAt)) - (b.order ?? getTime(b.savedAt));
+            case 'newest': return b.safeDate - a.safeDate;
+            case 'oldest': return a.safeDate - b.safeDate;
+            case 'playCount_desc': return b.safePlayCount - a.safePlayCount;
+            case 'custom': default: return a.originalIndex - b.originalIndex;
         }
     });
 }
@@ -523,9 +559,7 @@ function selectFolder(folderId) {
     document.querySelectorAll('.w-f-item').forEach(el => {
         const isActive = el.dataset.folderId === folderId;
         el.classList.toggle('active', isActive);
-        if (isActive && window.innerWidth <= 900) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        }
+        // PCでスクロールするロジックは削除 (表示崩れ防止)
     });
 
     document.querySelectorAll('.m-f-item').forEach(el => {
@@ -603,6 +637,7 @@ function loadMoreTracks() {
     scheduleMarqueeUpdate();
 }
 
+// 🌟 全体スクロールバグ修正版
 function updateActiveTrackUI() {
     if (currentPlayingItem && currentRenderSongs) {
         const activeIndex = currentRenderSongs.findIndex(s => s === currentPlayingItem);
@@ -629,14 +664,14 @@ function updateActiveTrackUI() {
             activeEl.querySelector('.w-t-idx').classList.add('hidden');
             activeEl.querySelector('.w-t-playing-icon').classList.remove('hidden');
             
-            // 全体スクロールバグを防ぐため scrollTop で位置を合わせる
-            const listTop = trackListEl.scrollTop;
-            const listHeight = trackListEl.clientHeight;
-            const elTop = activeEl.offsetTop;
-            const elHeight = activeEl.clientHeight;
+            // 親コンテナ (trackListEl) の中だけでスクロールさせる
+            const containerTop = trackListEl.scrollTop;
+            const containerHeight = trackListEl.clientHeight;
+            const elementTop = activeEl.offsetTop - trackListEl.offsetTop; 
+            const elementHeight = activeEl.clientHeight;
             
-            if (elTop < listTop || elTop + elHeight > listTop + listHeight) {
-                trackListEl.scrollTo({ top: elTop - listHeight / 2 + elHeight / 2, behavior: 'smooth' });
+            if (elementTop < containerTop || elementTop + elementHeight > containerTop + containerHeight) {
+                trackListEl.scrollTo({ top: elementTop - (containerHeight / 2) + (elementHeight / 2), behavior: 'smooth' });
             }
         }
     }
