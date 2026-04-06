@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMS Playlist Maker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --accent: #38bdf8; --border: #334155; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; line-height: 1.6; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .editor-grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        h1, h2 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 1.2rem; color: var(--accent); }
+        label { display: block; margin: 10px 0 5px; font-size: 0.85rem; opacity: 0.8; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); background: #0f172a; color: white; border-radius: 6px; box-sizing: border-box; }
+        button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        .btn-add { background: var(--accent); color: #000; width: 100%; margin-top: 15px; }
+        .btn-export { background: #22c55e; color: white; font-size: 1rem; }
+        .btn-import { background: #64748b; color: white; }
+        .btn-delete { background: #ef4444; color: white; padding: 5px 10px; font-size: 0.7rem; }
+        .item-list { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .item-list th, .item-list td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 0.85rem; }
+        .folder-chip { display: inline-block; background: var(--border); padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin-right: 5px; }
+        .nav-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="display:flex; justify-content: space-between; align-items: center;">
+        <h1><i class="fas fa-edit"></i> CMS Playlist Maker</h1>
+        <a href="navi.html" class="nav-link"><i class="fas fa-play-circle"></i> プレイヤーに戻る</a>
+    </div>
+
+    <div class="editor-grid">
+        <!-- 左側：入力フォーム -->
+        <div class="side-panel">
+            <div class="card">
+                <h2>動画の追加</h2>
+                <label>動画URL (YouTube / ニコニコ)</label>
+                <input type="text" id="in-url" placeholder="https://www.youtube.com/watch?v=...">
+                
+                <label>タイトル</label>
+                <input type="text" id="in-title" placeholder="曲名を入力">
+                
+                <label>チャンネル名 / アーティスト</label>
+                <input type="text" id="in-artist" placeholder="アーティスト名">
+
+                <label>所属フォルダ (カンマ区切り)</label>
+                <input type="text" id="in-folders" placeholder="J-POP, Anime">
+
+                <label>サムネイルURL (空欄可)</label>
+                <input type="text" id="in-thumb" placeholder="https://...">
+
+                <button class="btn-add" id="btn-add-item">リストに追加</button>
+            </div>
+
+            <div class="card">
+                <h2>データ管理</h2>
+                <button class="btn-export" id="btn-export-json" style="width:100%; margin-bottom:10px;">
+                    <i class="fas fa-download"></i> JSONを書き出す
+                </button>
+                <label>既存のJSONを編集</label>
+                <input type="file" id="import-json-edit" accept=".json" class="btn-import">
+            </div>
+        </div>
+
+        <!-- 右側：現在のリスト -->
+        <div class="main-panel">
+            <div class="card">
+                <h2>登録済みアイテム (<span id="count">0</span>)</h2>
+                <div style="overflow-x: auto;">
+                    <table class="item-list">
+                        <thead>
+                            <tr>
+                                <th>タイトル</th>
+                                <th>サイト</th>
+                                <th>フォルダ</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-body">
+                            <!-- JSで追加 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let mediaItems = [];
+
+    // URLからサイトを判定
+    function detectSite(url) {
+        if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+        if (url.includes('nicovideo.jp')) return 'niconico';
+        return 'other';
+    }
+
+    // リストの描画
+    function renderList() {
+        const tbody = document.getElementById('list-body');
+        tbody.innerHTML = '';
+        mediaItems.forEach((item, idx) => {
+            const tr = document.createElement('tr');
+            const foldersHtml = item.folders.map(f => `<span class="folder-chip">${f}</span>`).join('');
+            tr.innerHTML = `
+                <td><strong>${item.title}</strong><br><small>${item.channelName}</small></td>
+                <td>${item.site}</td>
+                <td>${foldersHtml}</td>
+                <td><button class="btn-delete" onclick="deleteItem(${idx})">削除</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        document.getElementById('count').textContent = mediaItems.length;
+    }
+
+    // アイテム追加
+    document.getElementById('btn-add-item').onclick = () => {
+        const url = document.getElementById('in-url').value;
+        const title = document.getElementById('in-title').value;
+        const artist = document.getElementById('in-artist').value;
+        const folderStr = document.getElementById('in-folders').value;
+        const thumb = document.getElementById('in-thumb').value;
+
+        if (!url || !title) { alert('URLとタイトルは必須です'); return; }
+
+        const item = {
+            title: title,
+            url: url,
+            site: detectSite(url),
+            channelName: artist || 'Unknown',
+            thumbnail: thumb || '',
+            folders: folderStr ? folderStr.split(',').map(s => s.trim()) : ['Manual'],
+            savedAt: new Date().toISOString()
+        };
+
+        mediaItems.push(item);
+        renderList();
+        
+        // 入力をクリア
+        document.getElementById('in-url').value = '';
+        document.getElementById('in-title').value = '';
+    };
+
+    // 削除
+    window.deleteItem = (idx) => {
+        mediaItems.splice(idx, 1);
+        renderList();
+    };
+
+    // JSON書き出し
+    document.getElementById('btn-export-json').onclick = () => {
+        if (mediaItems.length === 0) { alert('アイテムがありません'); return; }
+        
+        // フォルダ設定（重複なしで抽出）
+        const folderNames = [...new Set(mediaItems.flatMap(i => i.folders))];
+        const folderSettings = folderNames.map((name, idx) => ({ folderName: name, order: idx }));
+
+        const exportData = {
+            mediaItems: mediaItems,
+            folderSettings: folderSettings
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'cms_playlist.json';
+        a.click();
+    };
+
+    // JSONインポート（編集用）
+    document.getElementById('import-json-edit').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                mediaItems = Array.isArray(data) ? data : (data.mediaItems || []);
+                renderList();
+            } catch (err) { alert('JSONの読み込みに失敗しました'); }
+        };
+        reader.readAsText(file);
+    };
+</script>
+
+</body>
+</html>
