@@ -1,39 +1,21 @@
 const defaultSettings = {
-    theme: 'modern',
-    bgImage: '',
-    bgPosition: 'center',
-    bgSize: 'cover',
-    bgOpacity: 0.5,
-    bootSound: '',
-    baseFontSize: 100,         
-    pcLeftWidth: 350,          
-    musicMode: false,
-    showClock: true,
-    showThumbnails: true,
-    simpleLayoutMode: false,   
-    performanceMode: false,
-    dataSaverMode: false,      // 追加: 低画質モード
-    customColorEnabled: false,
-    customAccentColor: '#00aaff',
-    customBorderColor: '#ffffff',
-    layoutPC: {
-        clock:    { col: 1, order: 1 },
-        player:   { col: 1, order: 2 },
-        controls: { col: 1, order: 3 },
-        library:  { col: 2, order: 1 }
-    }
+    theme: 'modern', bgImage: '', bgPosition: 'center', bgSize: 'cover', bgOpacity: 0.5, bootSound: '',
+    baseFontSize: 100, pcLeftWidth: 350, musicMode: false, showClock: true, showThumbnails: true,
+    simpleLayoutMode: false, performanceMode: false, dataSaverMode: false,
+    customColorEnabled: false, customAccentColor: '#00aaff', customBorderColor: '#ffffff',
+    layoutPC: { clock: { col: 1, order: 1 }, player: { col: 1, order: 2 }, controls: { col: 1, order: 3 }, library: { col: 2, order: 1 } }
 };
 let appSettings = { ...defaultSettings };
 
 let allItems = [];
-let folderSettings =[];
-let musicLibrary =[];
+let folderSettings = [];
+let musicLibrary = [];
 let currentFolderId = null;
 let currentSortOrder = 'custom';
 let currentSearchQuery = "";
 let excludeNico = false;
 
-let currentPlaylist =[];
+let currentPlaylist = [];
 let currentIndex = 0;
 let isPlaying = false;
 let currentPlayingItem = null;
@@ -42,7 +24,6 @@ let ytPlayer = null;
 let isTransitioning = false;
 let isListVisible = false;
 
-// ニコニコ動画の再生管理用
 let nicoDuration = 0;
 let nicoCurrentTime = 0;
 let nicoEndedFlag = false;
@@ -54,7 +35,7 @@ let progressInterval;
 
 let currentRenderedCount = 0;
 const RENDER_CHUNK_SIZE = 50;
-let currentRenderSongs =[];
+let currentRenderSongs = [];
 
 const importScreen = document.getElementById('import-screen');
 const readyScreen = document.getElementById('ready-screen');
@@ -64,174 +45,99 @@ const folderListEl = document.getElementById('widget-folder-list');
 const trackListEl = document.getElementById('widget-track-list');
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadSettings();
-    applyThemeSettings();
-    applyPCLayoutDOM(); 
-    initMainDnDUI(); 
+    loadSettings(); applyThemeSettings(); applyPCLayoutDOM(); initMainDnDUI(); 
+    updateClock(); setInterval(updateClock, 1000); loadYouTubeAPI();
 
-    updateClock();
-    setInterval(updateClock, 1000);
-    loadYouTubeAPI();
+    window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(scheduleMarqueeUpdate, 200); });
 
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(scheduleMarqueeUpdate, 200);
-    });
+    trackListEl.addEventListener('scroll', () => { if (trackListEl.scrollTop + trackListEl.clientHeight >= trackListEl.scrollHeight - 100) loadMoreTracks(); });
 
-    // リストスクロール時
-    trackListEl.addEventListener('scroll', () => {
-        if (trackListEl.scrollTop + trackListEl.clientHeight >= trackListEl.scrollHeight - 100) {
-            loadMoreTracks();
-        }
-    });
-
-    // 📱 スマホ時の音楽モード拡縮操作 (Apple Music風)
     const widgetControls = document.getElementById('widget-controls');
     widgetControls.addEventListener('click', (e) => {
         if (window.innerWidth <= 900 && document.body.classList.contains('music-mode')) {
-            if (e.target.closest('.controls-main') || e.target.closest('.settings-btn') || e.target.closest('.progress-area')) return;
+            if (e.target.closest('.controls-main') || e.target.closest('.settings-btn') || e.target.closest('.progress-area') || e.target.closest('.drag-handle')) return;
             document.body.classList.toggle('player-expanded');
         }
     });
+    // 拡大画面を閉じるボタン代わり
+    const widgetArt = document.getElementById('widget-art');
+    widgetArt.addEventListener('click', () => { if (document.body.classList.contains('player-expanded')) document.body.classList.remove('player-expanded'); });
 
     document.getElementById('import-json').addEventListener('change', handleFileImport);
     document.getElementById('btn-user-start').addEventListener('click', startGame);
     document.getElementById('widget-search-box').addEventListener('input', handleSearch);
     document.getElementById('widget-sort-select').addEventListener('change', handleSortChange);
     document.getElementById('exclude-nico').addEventListener('change', handleNicoFilterChange);
-    
     document.getElementById('widget-btn-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('progress-container').addEventListener('click', handleProgressClick);
 
-    document.getElementById('btn-open-mobile-folder').addEventListener('click', () => {
-        document.getElementById('mobile-folder-modal').classList.remove('hidden');
-    });
-    document.getElementById('btn-close-folder-modal').addEventListener('click', () => {
-        document.getElementById('mobile-folder-modal').classList.add('hidden');
-    });
-    document.getElementById('btn-toggle-mobile-nav').addEventListener('click', () => {
-        document.body.classList.toggle('show-mobile-nav');
-    });
-
+    document.getElementById('btn-open-mobile-folder').addEventListener('click', () => document.getElementById('mobile-folder-modal').classList.remove('hidden'));
+    document.getElementById('btn-close-folder-modal').addEventListener('click', () => document.getElementById('mobile-folder-modal').classList.add('hidden'));
+    document.getElementById('btn-toggle-mobile-nav').addEventListener('click', () => document.body.classList.toggle('show-mobile-nav'));
     document.getElementById('btn-toggle-list').addEventListener('click', () => {
-        isListVisible = !isListVisible;
-        document.body.classList.toggle('list-visible', isListVisible);
-        document.getElementById('toggle-list-text').textContent = isListVisible ? 'リストを隠す' : 'リストを表示';
-        scheduleMarqueeUpdate();
+        isListVisible = !isListVisible; document.body.classList.toggle('list-visible', isListVisible);
+        document.getElementById('toggle-list-text').textContent = isListVisible ? 'リストを隠す' : 'リストを表示'; scheduleMarqueeUpdate();
     });
 
-    setupPlayerControls();
-    setupSettingsModal();
-    window.addEventListener('message', handleNicoMessage);
+    setupPlayerControls(); setupSettingsModal(); window.addEventListener('message', handleNicoMessage);
 });
 
 function loadYouTubeAPI() {
-    if (!window.YT) {
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    }
+    if (!window.YT) { const tag = document.createElement('script'); tag.src = "https://www.youtube.com/iframe_api"; document.getElementsByTagName('script')[0].parentNode.insertBefore(tag, document.getElementsByTagName('script')[0]); }
 }
 
 function loadSettings() {
     try {
-        const saved = localStorage.getItem('cms_player_settings_v14');
-        if (saved) {
-            appSettings = { ...defaultSettings, ...JSON.parse(saved) };
-            if (!appSettings.layoutPC) appSettings.layoutPC = defaultSettings.layoutPC;
-        } else {
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 900;
-            if (isMobile) { appSettings.performanceMode = true; appSettings.showClock = false; }
-        }
+        const saved = localStorage.getItem('cms_player_settings_v15');
+        if (saved) { appSettings = { ...defaultSettings, ...JSON.parse(saved) }; if (!appSettings.layoutPC) appSettings.layoutPC = defaultSettings.layoutPC; } 
+        else { const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 900; if (isMobile) { appSettings.performanceMode = true; appSettings.showClock = false; } }
     } catch (e) { console.error(e); }
 }
 
-function saveSettings() {
-    localStorage.setItem('cms_player_settings_v14', JSON.stringify(appSettings));
-}
+function saveSettings() { localStorage.setItem('cms_player_settings_v15', JSON.stringify(appSettings)); }
 
 function applyThemeSettings() {
     document.body.className = `theme-${appSettings.theme}`;
-    document.body.classList.toggle('music-mode', appSettings.musicMode);
-    document.body.classList.toggle('show-list-thumbnails', appSettings.showThumbnails);
-    document.body.classList.toggle('show-clock', appSettings.showClock);
-    document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
+    document.body.classList.toggle('music-mode', appSettings.musicMode); document.body.classList.toggle('show-list-thumbnails', appSettings.showThumbnails);
+    document.body.classList.toggle('show-clock', appSettings.showClock); document.body.classList.toggle('simple-layout-mode', appSettings.simpleLayoutMode);
     document.body.classList.toggle('performance-mode', appSettings.performanceMode);
     
-    if (appSettings.simpleLayoutMode && isListVisible) {
-        document.body.classList.add('list-visible');
-        document.getElementById('toggle-list-text').textContent = 'リストを隠す';
-    } else {
-        document.body.classList.remove('list-visible');
-        document.getElementById('toggle-list-text').textContent = 'リストを表示';
-    }
+    if (appSettings.simpleLayoutMode && isListVisible) { document.body.classList.add('list-visible'); document.getElementById('toggle-list-text').textContent = 'リストを隠す'; } 
+    else { document.body.classList.remove('list-visible'); document.getElementById('toggle-list-text').textContent = 'リストを表示'; }
     
     document.documentElement.style.setProperty('--base-font-size', `${appSettings.baseFontSize}%`);
     document.documentElement.style.setProperty('--pc-left-width', `${appSettings.pcLeftWidth}px`);
-
-    if (appSettings.bgImage) {
-        document.documentElement.style.setProperty('--bg-image', `url(${appSettings.bgImage})`);
-        document.documentElement.style.setProperty('--bg-position', appSettings.bgPosition);
-        document.documentElement.style.setProperty('--bg-size', appSettings.bgSize);
-    } else {
-        document.documentElement.style.setProperty('--bg-image', 'none');
-    }
+    if (appSettings.bgImage) { document.documentElement.style.setProperty('--bg-image', `url(${appSettings.bgImage})`); document.documentElement.style.setProperty('--bg-position', appSettings.bgPosition); document.documentElement.style.setProperty('--bg-size', appSettings.bgSize); } 
+    else document.documentElement.style.setProperty('--bg-image', 'none');
     
-    if (appSettings.customColorEnabled) {
-        document.body.style.setProperty('--text-color', appSettings.customAccentColor);
-        document.body.style.setProperty('--accent-color', appSettings.customAccentColor); 
-        document.body.style.setProperty('--border-color', appSettings.customBorderColor);
-    } else {
-        document.body.style.removeProperty('--text-color');
-        document.body.style.removeProperty('--accent-color');
-        document.body.style.removeProperty('--border-color');
-    }
-
+    if (appSettings.customColorEnabled) { document.body.style.setProperty('--text-color', appSettings.customAccentColor); document.body.style.setProperty('--accent-color', appSettings.customAccentColor); document.body.style.setProperty('--border-color', appSettings.customBorderColor); } 
+    else { document.body.style.removeProperty('--text-color'); document.body.style.removeProperty('--accent-color'); document.body.style.removeProperty('--border-color'); }
+    
     const op = parseFloat(appSettings.bgOpacity);
-    document.documentElement.style.setProperty('--panel-alpha', op);
-    document.documentElement.style.setProperty('--panel-blur', `${op * 20}px`);
+    document.documentElement.style.setProperty('--panel-alpha', op); document.documentElement.style.setProperty('--panel-blur', `${op * 20}px`);
 }
 
 function applyPCLayoutDOM() {
     if (window.innerWidth <= 900) return;
-    const col1 = document.getElementById('pc-col-1');
-    const col2 = document.getElementById('pc-col-2');
-    const elements = {
-        player: document.getElementById('widget-player'), controls: document.getElementById('widget-controls'),
-        clock: document.getElementById('widget-clock'), library: document.getElementById('widget-library')
-    };
-    const layoutArr = Object.keys(appSettings.layoutPC).map(k => ({ id: k, ...appSettings.layoutPC[k] }));
-    layoutArr.sort((a,b) => a.order - b.order);
-    layoutArr.forEach(item => {
-        if (elements[item.id]) { if(item.col === 1) col1.appendChild(elements[item.id]); else col2.appendChild(elements[item.id]); }
-    });
+    const col1 = document.getElementById('pc-col-1'); const col2 = document.getElementById('pc-col-2');
+    const elements = { player: document.getElementById('widget-player'), controls: document.getElementById('widget-controls'), clock: document.getElementById('widget-clock'), library: document.getElementById('widget-library') };
+    const layoutArr = Object.keys(appSettings.layoutPC).map(k => ({ id: k, ...appSettings.layoutPC[k] })).sort((a,b) => a.order - b.order);
+    layoutArr.forEach(item => { if (elements[item.id]) { if(item.col === 1) col1.appendChild(elements[item.id]); else col2.appendChild(elements[item.id]); } });
 }
 
 function initMainDnDUI() {
-    const draggables = document.querySelectorAll('.layout-block');
-    const columns = document.querySelectorAll('.pc-column');
+    const draggables = document.querySelectorAll('.layout-block'); const columns = document.querySelectorAll('.pc-column');
     draggables.forEach(draggable => {
         const handle = draggable.querySelector('.drag-handle');
-        if(handle) {
-            handle.addEventListener('mousedown', () => { draggable.setAttribute('draggable', 'true'); });
-            handle.addEventListener('mouseup', () => { draggable.setAttribute('draggable', 'false'); });
-        }
+        if(handle) { handle.addEventListener('mousedown', () => draggable.setAttribute('draggable', 'true')); handle.addEventListener('mouseup', () => draggable.setAttribute('draggable', 'false')); }
         draggable.addEventListener('dragstart', () => draggable.classList.add('dragging'));
-        draggable.addEventListener('dragend', () => {
-            draggable.classList.remove('dragging'); draggable.setAttribute('draggable', 'false'); saveMainLayout();
-        });
+        draggable.addEventListener('dragend', () => { draggable.classList.remove('dragging'); draggable.setAttribute('draggable', 'false'); saveMainLayout(); });
     });
     columns.forEach(column => {
         column.addEventListener('dragover', e => {
-            e.preventDefault();
-            if (window.innerWidth <= 900) return;
-            const afterElement = getDragAfterElement(column, e.clientY);
-            const draggable = document.querySelector('.dragging');
-            if (draggable) {
-                if (afterElement == null) column.appendChild(draggable);
-                else column.insertBefore(draggable, afterElement);
-            }
+            e.preventDefault(); if (window.innerWidth <= 900) return;
+            const afterElement = getDragAfterElement(column, e.clientY); const draggable = document.querySelector('.dragging');
+            if (draggable) { if (afterElement == null) column.appendChild(draggable); else column.insertBefore(draggable, afterElement); }
         });
     });
 }
@@ -239,78 +145,66 @@ function initMainDnDUI() {
 function getDragAfterElement(container, y) {
     const draggableElements =[...container.querySelectorAll('.layout-block:not(.dragging)')];
     return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
-        else return closest;
+        const box = child.getBoundingClientRect(); const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child }; else return closest;
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 function saveMainLayout() {
-    document.querySelectorAll('#pc-col-1 .layout-block').forEach((el, idx) => {
-        const id = el.id.replace('widget-', ''); if(appSettings.layoutPC[id]) appSettings.layoutPC[id] = { col: 1, order: idx + 1 };
-    });
-    document.querySelectorAll('#pc-col-2 .layout-block').forEach((el, idx) => {
-        const id = el.id.replace('widget-', ''); if(appSettings.layoutPC[id]) appSettings.layoutPC[id] = { col: 2, order: idx + 1 };
-    });
+    document.querySelectorAll('#pc-col-1 .layout-block').forEach((el, idx) => { const id = el.id.replace('widget-', ''); if(appSettings.layoutPC[id]) appSettings.layoutPC[id] = { col: 1, order: idx + 1 }; });
+    document.querySelectorAll('#pc-col-2 .layout-block').forEach((el, idx) => { const id = el.id.replace('widget-', ''); if(appSettings.layoutPC[id]) appSettings.layoutPC[id] = { col: 2, order: idx + 1 }; });
     saveSettings();
 }
 
 function setupSettingsModal() {
     const modal = document.getElementById('settings-modal');
+    
+    // タブ切り替えロジック
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        });
+    });
+
     document.getElementById('btn-open-settings').onclick = () => {
         document.getElementById('set-theme').value = appSettings.theme;
-        document.getElementById('set-font-size').value = appSettings.baseFontSize;
-        document.getElementById('font-val').textContent = appSettings.baseFontSize;
-        document.getElementById('set-pc-left-width').value = appSettings.pcLeftWidth;
-        document.getElementById('set-bg-position').value = appSettings.bgPosition;
-        document.getElementById('set-bg-size').value = appSettings.bgSize;
-        document.getElementById('set-opacity').value = appSettings.bgOpacity;
-        document.getElementById('op-val').textContent = appSettings.bgOpacity;
-        document.getElementById('set-simple-layout').checked = appSettings.simpleLayoutMode;
-        document.getElementById('set-performance-mode').checked = appSettings.performanceMode;
-        document.getElementById('set-data-saver').checked = appSettings.dataSaverMode;
-        document.getElementById('set-music-mode').checked = appSettings.musicMode;
-        document.getElementById('set-show-clock').checked = appSettings.showClock;
-        document.getElementById('set-show-thumbnails').checked = appSettings.showThumbnails;
-        document.getElementById('set-use-custom-color').checked = appSettings.customColorEnabled;
-        document.getElementById('set-accent-color').value = appSettings.customAccentColor;
+        document.getElementById('set-font-size').value = appSettings.baseFontSize; document.getElementById('font-val').textContent = appSettings.baseFontSize;
+        document.getElementById('set-pc-left-width').value = appSettings.pcLeftWidth; document.getElementById('pc-width-val').textContent = appSettings.pcLeftWidth;
+        document.getElementById('set-bg-position').value = appSettings.bgPosition; document.getElementById('set-bg-size').value = appSettings.bgSize;
+        document.getElementById('set-opacity').value = appSettings.bgOpacity; document.getElementById('op-val').textContent = appSettings.bgOpacity;
+        document.getElementById('set-simple-layout').checked = appSettings.simpleLayoutMode; document.getElementById('set-performance-mode').checked = appSettings.performanceMode;
+        document.getElementById('set-data-saver').checked = appSettings.dataSaverMode; document.getElementById('set-music-mode').checked = appSettings.musicMode;
+        document.getElementById('set-show-clock').checked = appSettings.showClock; document.getElementById('set-show-thumbnails').checked = appSettings.showThumbnails;
+        document.getElementById('set-use-custom-color').checked = appSettings.customColorEnabled; document.getElementById('set-accent-color').value = appSettings.customAccentColor;
         document.getElementById('set-border-color').value = appSettings.customBorderColor;
         modal.classList.remove('hidden');
     };
 
     document.getElementById('set-font-size').oninput = (e) => document.getElementById('font-val').textContent = e.target.value;
+    document.getElementById('set-pc-left-width').oninput = (e) => document.getElementById('pc-width-val').textContent = e.target.value;
     document.getElementById('set-opacity').oninput = (e) => document.getElementById('op-val').textContent = e.target.value;
 
     document.getElementById('btn-close-settings').onclick = () => modal.classList.add('hidden');
-    document.getElementById('btn-reset-settings').onclick = () => {
-        if (confirm('設定を初期化してリロードしますか？')) { localStorage.removeItem('cms_player_settings_v14'); location.reload(); }
-    };
+    document.getElementById('btn-reset-settings').onclick = () => { if (confirm('設定を初期化してリロードしますか？')) { localStorage.removeItem('cms_player_settings_v15'); location.reload(); } };
     document.getElementById('btn-save-settings').onclick = () => {
-        appSettings.theme = document.getElementById('set-theme').value;
-        appSettings.baseFontSize = document.getElementById('set-font-size').value;
-        appSettings.pcLeftWidth = document.getElementById('set-pc-left-width').value;
-        appSettings.bgPosition = document.getElementById('set-bg-position').value;
-        appSettings.bgSize = document.getElementById('set-bg-size').value;
-        appSettings.bgOpacity = document.getElementById('set-opacity').value;
-        appSettings.simpleLayoutMode = document.getElementById('set-simple-layout').checked;
-        appSettings.performanceMode = document.getElementById('set-performance-mode').checked;
-        appSettings.dataSaverMode = document.getElementById('set-data-saver').checked;
-        appSettings.musicMode = document.getElementById('set-music-mode').checked;
-        appSettings.showClock = document.getElementById('set-show-clock').checked;
-        appSettings.showThumbnails = document.getElementById('set-show-thumbnails').checked;
-        appSettings.customColorEnabled = document.getElementById('set-use-custom-color').checked;
-        appSettings.customAccentColor = document.getElementById('set-accent-color').value;
+        appSettings.theme = document.getElementById('set-theme').value; appSettings.baseFontSize = document.getElementById('set-font-size').value;
+        appSettings.pcLeftWidth = document.getElementById('set-pc-left-width').value; appSettings.bgPosition = document.getElementById('set-bg-position').value;
+        appSettings.bgSize = document.getElementById('set-bg-size').value; appSettings.bgOpacity = document.getElementById('set-opacity').value;
+        appSettings.simpleLayoutMode = document.getElementById('set-simple-layout').checked; appSettings.performanceMode = document.getElementById('set-performance-mode').checked;
+        appSettings.dataSaverMode = document.getElementById('set-data-saver').checked; appSettings.musicMode = document.getElementById('set-music-mode').checked;
+        appSettings.showClock = document.getElementById('set-show-clock').checked; appSettings.showThumbnails = document.getElementById('set-show-thumbnails').checked;
+        appSettings.customColorEnabled = document.getElementById('set-use-custom-color').checked; appSettings.customAccentColor = document.getElementById('set-accent-color').value;
         appSettings.customBorderColor = document.getElementById('set-border-color').value;
         saveSettings(); modal.classList.add('hidden'); applyThemeSettings(); scheduleMarqueeUpdate(); 
     };
 }
 
 function updateClock() {
-    if (!appSettings.showClock) return;
-    const now = new Date();
-    document.getElementById('clock-time').textContent = now.toLocaleTimeString('ja-JP', { hour12: false });
-    document.getElementById('clock-date').textContent = now.toLocaleDateString('ja-JP');
+    if (!appSettings.showClock) return; const now = new Date();
+    document.getElementById('clock-time').textContent = now.toLocaleTimeString('ja-JP', { hour12: false }); document.getElementById('clock-date').textContent = now.toLocaleDateString('ja-JP');
 }
 
 function updateMarquee() {
@@ -318,39 +212,30 @@ function updateMarquee() {
     requestAnimationFrame(() => {
         document.querySelectorAll('.marquee-wrapper').forEach(wrapper => {
             const content = wrapper.querySelector('.marquee-content'); if (!content) return;
-            if (content.scrollWidth > wrapper.clientWidth + 2) {
-                wrapper.style.setProperty('--parent-width', `${wrapper.clientWidth}px`);
-                content.classList.add('is-marquee');
-            } else content.classList.remove('is-marquee');
+            if (content.scrollWidth > wrapper.clientWidth + 2) { wrapper.style.setProperty('--parent-width', `${wrapper.clientWidth}px`); content.classList.add('is-marquee'); } 
+            else content.classList.remove('is-marquee');
         });
     });
 }
 function scheduleMarqueeUpdate() { setTimeout(updateMarquee, 100); }
 
 function handleFileImport(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
+    const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
     reader.onload = (e) => {
         try {
-            const data = JSON.parse(e.target.result);
-            const mediaItems = Array.isArray(data) ? data : (data.mediaItems ||[]);
+            const data = JSON.parse(e.target.result); const mediaItems = Array.isArray(data) ? data : (data.mediaItems ||[]);
             allItems = mediaItems.filter(i => i.site !== 'system').map((item, idx) => ({ ...item, originalIndex: idx, safeDate: item.savedAt ? new Date(item.savedAt).getTime() : 0, safePlayCount: item.playCount || 0 }));
             folderSettings = data.folderSettings ||[];
-            if (allItems.length > 0) {
-                importScreen.classList.add('hidden'); readyScreen.classList.remove('hidden');
-                buildLibrary(); renderFolders(); selectFolder(musicLibrary[0]?.id || '__all');
-            } else alert('動画データがありません。');
+            if (allItems.length > 0) { importScreen.classList.add('hidden'); readyScreen.classList.remove('hidden'); buildLibrary(); renderFolders(); selectFolder(musicLibrary[0]?.id || '__all'); } 
+            else alert('動画データがありません。');
         } catch (error) { alert('JSONの解析に失敗しました。'); }
     };
     reader.readAsText(file);
 }
 
 function startGame() {
-    readyScreen.classList.add('hidden'); bootScreen.classList.remove('hidden');
-    document.querySelectorAll('.boot-container').forEach(el => el.classList.add('hidden'));
-    const activeBoot = document.querySelector(`.boot-${appSettings.theme}`);
-    if (activeBoot) activeBoot.classList.remove('hidden');
-    
+    readyScreen.classList.add('hidden'); bootScreen.classList.remove('hidden'); document.querySelectorAll('.boot-container').forEach(el => el.classList.add('hidden'));
+    const activeBoot = document.querySelector(`.boot-${appSettings.theme}`); if (activeBoot) activeBoot.classList.remove('hidden');
     bootScreen.addEventListener('click', endBootSequence); bootScreen.addEventListener('touchstart', endBootSequence, {passive: true});
     bootTimeoutId = setTimeout(endBootSequence, 4000);
 }
@@ -359,27 +244,35 @@ function endBootSequence() {
     clearTimeout(bootTimeoutId); clearTimeout(toyotaStepTimeoutId);
     bootScreen.removeEventListener('click', endBootSequence); bootScreen.removeEventListener('touchstart', endBootSequence);
     bootScreen.classList.add('hidden'); mainApp.classList.remove('hidden'); scheduleMarqueeUpdate(); 
-    if (currentFolderId) {
-        const folder = musicLibrary.find(f => f.id === currentFolderId);
-        startPlaylist(folder ? folder.songs : (musicLibrary.find(f => f.id === '__all')?.songs ||[]), 0);
-    }
+    if (currentFolderId) { const folder = musicLibrary.find(f => f.id === currentFolderId); startPlaylist(folder ? folder.songs : (musicLibrary.find(f => f.id === '__all')?.songs ||[]), 0); }
 }
 
 function buildLibrary() {
     let folderMap = {};
+    let folderOrder = []; // 🌟 JSONでの出現順序を記録
+
     const itemsToProcess = allItems.filter(item => {
         if (excludeNico && item.site === 'niconico') return false;
-        if (currentSearchQuery) {
-            const query = currentSearchQuery.toLowerCase();
-            return (item.title || "").toLowerCase().includes(query) || (item.tags ||[]).join(' ').toLowerCase().includes(query);
-        }
+        if (currentSearchQuery) { const query = currentSearchQuery.toLowerCase(); return (item.title || "").toLowerCase().includes(query) || (item.tags ||[]).join(' ').toLowerCase().includes(query); }
         return true;
     });
+
     itemsToProcess.forEach(item => {
         const folders = item.folders && item.folders.length > 0 ? item.folders :[item.folder || 'Manual'];
-        folders.forEach(fName => { if (!folderMap[fName]) folderMap[fName] =[]; folderMap[fName].push(item); });
+        folders.forEach(fName => { 
+            if (!folderMap[fName]) { folderMap[fName] =[]; folderOrder.push(fName); }
+            folderMap[fName].push(item); 
+        });
     });
-    const folderNames = Object.keys(folderMap).sort((a, b) => a.localeCompare(b, 'ja'));
+
+    // 🌟 JSON内の folderSettings の順序を最優先し、未定義の場合は出現順を維持
+    const folderNames = Object.keys(folderMap).sort((a, b) => {
+        const setA = folderSettings.find(s => s.folderName === a); const setB = folderSettings.find(s => s.folderName === b);
+        const orderA = setA && typeof setA.order === 'number' ? setA.order : folderOrder.indexOf(a) + 10000;
+        const orderB = setB && typeof setB.order === 'number' ? setB.order : folderOrder.indexOf(b) + 10000;
+        return orderA - orderB;
+    });
+
     musicLibrary =[ { id: '__all', name: '📚 All', songs: sortSongs(itemsToProcess) }, ...folderNames.map(name => ({ id: name, name: `📁 ${name}`, songs: sortSongs(folderMap[name]) })) ];
 }
 
@@ -399,8 +292,7 @@ function sortSongs(songs) {
 
 function renderFolders() {
     folderListEl.innerHTML = '';
-    const mobileModalListEl = document.getElementById('mobile-folder-list-modal');
-    if (mobileModalListEl) mobileModalListEl.innerHTML = '';
+    const mobileModalListEl = document.getElementById('mobile-folder-list-modal'); if (mobileModalListEl) mobileModalListEl.innerHTML = '';
     musicLibrary.forEach(folder => {
         const div = document.createElement('div'); div.className = 'w-f-item'; div.textContent = folder.name; div.dataset.folderId = folder.id;
         div.onclick = () => selectFolder(folder.id); folderListEl.appendChild(div);
@@ -417,8 +309,7 @@ function selectFolder(folderId) {
     currentFolderId = folderId;
     document.querySelectorAll('.w-f-item').forEach(el => el.classList.toggle('active', el.dataset.folderId === folderId));
     document.querySelectorAll('.m-f-item').forEach(el => {
-        const isActive = el.dataset.folderId === folderId;
-        el.classList.toggle('active', isActive);
+        const isActive = el.dataset.folderId === folderId; el.classList.toggle('active', isActive);
         el.innerHTML = isActive ? `<span><i class="fas fa-check" style="margin-right:8px;"></i>${el.textContent.trim()}</span> <i class="fas fa-music"></i>` : `<span>${el.textContent.trim()}</span> <i class="fas fa-music" style="opacity:0.6; font-size:0.9rem;"></i>`;
     });
     const folder = musicLibrary.find(f => f.id === folderId);
@@ -439,11 +330,9 @@ function renderTracks(songs) {
 
 function loadMoreTracks() {
     if (currentRenderedCount >= currentRenderSongs.length) return;
-    const fragment = document.createDocumentFragment();
-    const endIndex = Math.min(currentRenderedCount + RENDER_CHUNK_SIZE, currentRenderSongs.length);
+    const fragment = document.createDocumentFragment(); const endIndex = Math.min(currentRenderedCount + RENDER_CHUNK_SIZE, currentRenderSongs.length);
     for (let i = currentRenderedCount; i < endIndex; i++) {
-        const song = currentRenderSongs[i];
-        const div = document.createElement('div'); div.className = 'w-t-item';
+        const song = currentRenderSongs[i]; const div = document.createElement('div'); div.className = 'w-t-item';
         div.innerHTML = `
             <span class="w-t-idx">${i + 1}</span><span class="w-t-playing-icon hidden"><i class="fa-solid fa-volume-high"></i></span>
             <img class="w-t-thumb" src="${song.thumbnail || "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>"}" loading="lazy">
@@ -451,24 +340,18 @@ function loadMoreTracks() {
                 <div class="marquee-wrapper"><span class="track-title-text marquee-content" title="${escapeHTML(song.title)}">${escapeHTML(song.title)}</span></div>
                 <div class="marquee-wrapper"><span class="track-artist-text marquee-content">${escapeHTML(song.channelName || song.site)}</span></div>
             </div>`;
-        div.onclick = () => startPlaylist(currentRenderSongs, i);
-        fragment.appendChild(div);
+        div.onclick = () => startPlaylist(currentRenderSongs, i); fragment.appendChild(div);
     }
-    trackListEl.appendChild(fragment); currentRenderedCount = endIndex;
-    updateActiveTrackUI(); scheduleMarqueeUpdate();
+    trackListEl.appendChild(fragment); currentRenderedCount = endIndex; updateActiveTrackUI(); scheduleMarqueeUpdate();
 }
 
 function updateActiveTrackUI() {
-    if (currentPlayingItem && currentRenderSongs) {
-        while(currentRenderSongs.findIndex(s => s === currentPlayingItem) >= currentRenderedCount && currentRenderedCount < currentRenderSongs.length) loadMoreTracks();
-    }
+    if (currentPlayingItem && currentRenderSongs) { while(currentRenderSongs.findIndex(s => s === currentPlayingItem) >= currentRenderedCount && currentRenderedCount < currentRenderSongs.length) loadMoreTracks(); }
     document.querySelectorAll('.w-t-item').forEach(el => { el.classList.remove('active'); el.querySelector('.w-t-idx').classList.remove('hidden'); el.querySelector('.w-t-playing-icon').classList.add('hidden'); });
     if (currentPlayingItem) {
-        const songsInView = Array.from(trackListEl.children);
-        const activeIndex = songsInView.findIndex(el => { const t = el.querySelector('.track-title-text'); return t && t.textContent === currentPlayingItem.title; });
+        const songsInView = Array.from(trackListEl.children); const activeIndex = songsInView.findIndex(el => { const t = el.querySelector('.track-title-text'); return t && t.textContent === currentPlayingItem.title; });
         if (activeIndex > -1) {
-            const activeEl = songsInView[activeIndex];
-            activeEl.classList.add('active'); activeEl.querySelector('.w-t-idx').classList.add('hidden'); activeEl.querySelector('.w-t-playing-icon').classList.remove('hidden');
+            const activeEl = songsInView[activeIndex]; activeEl.classList.add('active'); activeEl.querySelector('.w-t-idx').classList.add('hidden'); activeEl.querySelector('.w-t-playing-icon').classList.remove('hidden');
             setTimeout(() => {
                 const cTop = trackListEl.scrollTop; const cHeight = trackListEl.clientHeight; const eTop = activeEl.offsetTop; const eHeight = activeEl.clientHeight;
                 if (eTop < cTop || eTop + eHeight > cTop + cHeight) trackListEl.scrollTo({ top: eTop - (cHeight / 2) + (eHeight / 2), behavior: 'smooth' });
@@ -492,7 +375,7 @@ function toggleFullscreen() {
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         if (playerWidget.requestFullscreen) playerWidget.requestFullscreen();
         else if (playerWidget.webkitRequestFullscreen) playerWidget.webkitRequestFullscreen();
-        else document.body.classList.toggle('pseudo-fullscreen'); // iPad/iOS fallback
+        else document.body.classList.toggle('pseudo-fullscreen');
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
         else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
@@ -504,74 +387,46 @@ function startProgressTimer() { clearInterval(progressInterval); progressInterva
 function stopProgressTimer() { clearInterval(progressInterval); }
 
 function updateProgress() {
-    if (!isPlaying) return;
-    let current = 0; let duration = 0;
+    if (!isPlaying) return; let current = 0; let duration = 0;
     
     if (currentPlayingItem.site === 'youtube' && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
         current = ytPlayer.getCurrentTime(); duration = ytPlayer.getDuration();
     } else if (currentPlayingItem.site === 'niconico') {
         nicoCurrentTime += 1; current = nicoCurrentTime; duration = nicoDuration;
-        // フォールバック: 動画終了後進まない現象防止
-        if (duration > 0 && current >= duration + 2 && !nicoEndedFlag) {
-            nicoEndedFlag = true; stopProgressTimer(); playNextVideo(); return;
-        }
+        if (duration > 0 && current >= duration + 2 && !nicoEndedFlag) { nicoEndedFlag = true; stopProgressTimer(); playNextVideo(); return; }
     } else return;
 
     if (duration > 0) {
         document.getElementById('progress-bar').style.width = `${(current / duration) * 100}%`;
-        document.getElementById('time-current').textContent = formatTime(current);
-        document.getElementById('time-duration').textContent = formatTime(duration);
+        document.getElementById('time-current').textContent = formatTime(current); document.getElementById('time-duration').textContent = formatTime(duration);
     }
 }
 
 function formatTime(seconds) {
     if (!seconds || isNaN(seconds)) return "0:00";
-    const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 function handleProgressClick(e) {
     if (!currentPlayingItem || !ytPlayer || currentPlayingItem.site !== 'youtube' || typeof ytPlayer.getDuration !== 'function') return;
     const rect = e.target.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width;
-    const duration = ytPlayer.getDuration();
-    if (duration > 0) { ytPlayer.seekTo(duration * pos, true); updateProgress(); }
+    const duration = ytPlayer.getDuration(); if (duration > 0) { ytPlayer.seekTo(duration * pos, true); updateProgress(); }
 }
 
-function startPlaylist(items, startIndex = 0) {
-    if (items.length === 0) return; currentPlaylist = items; currentIndex = startIndex; loadVideo(currentIndex);
-}
+function startPlaylist(items, startIndex = 0) { if (items.length === 0) return; currentPlaylist = items; currentIndex = startIndex; loadVideo(currentIndex); }
+function playNextVideo() { if (currentPlaylist.length === 0 || isTransitioning) return; isTransitioning = true; setTimeout(() => { isTransitioning = false; }, 1000); currentIndex = (currentIndex + 1) % currentPlaylist.length; loadVideo(currentIndex); }
+function playPrevVideo() { if (currentPlaylist.length === 0 || isTransitioning) return; isTransitioning = true; setTimeout(() => { isTransitioning = false; }, 1000); currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length; loadVideo(currentIndex); }
 
-function playNextVideo() {
-    if (currentPlaylist.length === 0 || isTransitioning) return;
-    isTransitioning = true; setTimeout(() => { isTransitioning = false; }, 1000);
-    currentIndex = (currentIndex + 1) % currentPlaylist.length; loadVideo(currentIndex);
-}
-
-function playPrevVideo() {
-    if (currentPlaylist.length === 0 || isTransitioning) return;
-    isTransitioning = true; setTimeout(() => { isTransitioning = false; }, 1000);
-    currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length; loadVideo(currentIndex);
-}
-
-function getYouTubeId(url) {
-    try { const urlObj = new URL(url); return urlObj.searchParams.get('v') || url.split('/').pop(); } 
-    catch(e) { const match = url.match(/[?&]v=([^&]+)/); return match ? match[1] : url.split('/').pop(); }
-}
-
+function getYouTubeId(url) { try { const urlObj = new URL(url); return urlObj.searchParams.get('v') || url.split('/').pop(); } catch(e) { const match = url.match(/[?&]v=([^&]+)/); return match ? match[1] : url.split('/').pop(); } }
 function getNicoId(url) { return url.split('?')[0].split('/').pop(); }
 
 function createYouTubePlayer(videoId) {
     if (window.YT && window.YT.Player) {
         ytPlayer = new YT.Player('yt-player-mount', {
-            height: '100%', width: '100%', videoId: videoId,
-            playerVars: { 'playsinline': 1, 'autoplay': 1, 'rel': 0 },
+            height: '100%', width: '100%', videoId: videoId, playerVars: { 'playsinline': 1, 'autoplay': 1, 'rel': 0 },
             events: { 
-                'onReady': (e) => { 
-                    if(appSettings.dataSaverMode && typeof e.target.setPlaybackQuality === 'function') e.target.setPlaybackQuality('tiny');
-                    isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); 
-                },
-                'onStateChange': onPlayerStateChange,
-                'onError': () => { setTimeout(playNextVideo, 5000); }
+                'onReady': (e) => { if(appSettings.dataSaverMode && typeof e.target.setPlaybackQuality === 'function') e.target.setPlaybackQuality('tiny'); isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); },
+                'onStateChange': onPlayerStateChange, 'onError': () => { setTimeout(playNextVideo, 5000); }
             }
         });
     } else setTimeout(() => createYouTubePlayer(videoId), 1000);
@@ -586,13 +441,10 @@ function onPlayerStateChange(event) {
 function loadVideo(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
     currentIndex = index; isTransitioning = false; currentPlayingItem = currentPlaylist[index]; isPlaying = true;
-    
-    // ニコニコ進捗リセット
     nicoDuration = 0; nicoCurrentTime = 0; nicoEndedFlag = false;
 
     updatePlayerUI(currentPlayingItem); updateActiveTrackUI();
-    document.getElementById('progress-bar').style.width = '0%'; document.getElementById('time-current').textContent = '0:00'; document.getElementById('time-duration').textContent = '0:00';
-    stopProgressTimer();
+    document.getElementById('progress-bar').style.width = '0%'; document.getElementById('time-current').textContent = '0:00'; document.getElementById('time-duration').textContent = '0:00'; stopProgressTimer();
 
     const container = document.getElementById('player-container');
     if (currentPlayingItem.site === 'youtube') {
@@ -607,11 +459,8 @@ function loadVideo(index) {
             const nicoId = getNicoId(currentPlayingItem.url);
             setTimeout(() => {
                 const iframe = document.createElement('iframe'); iframe.id = 'nico-player';
-                // ニコニコの投稿者ループを禁止するため loop=0 を付加 (API仕様によるがベストエフォート)
-                iframe.src = `https://embed.nicovideo.jp/watch/${nicoId}?jsapi=1&playerId=1&loop=0`;
-                iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media');
-                iframe.style.width = '100%'; iframe.style.height = '100%'; iframe.style.border = 'none';
-                container.appendChild(iframe);
+                iframe.src = `https://embed.nicovideo.jp/watch/${nicoId}?jsapi=1&playerId=1&loop=0`; iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media');
+                iframe.style.width = '100%'; iframe.style.height = '100%'; iframe.style.border = 'none'; container.appendChild(iframe);
             }, 50);
         } else { container.innerHTML = `<iframe src="${currentPlayingItem.url}" allowfullscreen allow="autoplay" style="width:100%; height:100%; border:none;"></iframe>`; }
     }
@@ -619,15 +468,12 @@ function loadVideo(index) {
 
 function handleNicoMessage(e) {
     if (e.origin !== 'https://embed.nicovideo.jp' || !currentPlayingItem || currentPlayingItem.site !== 'niconico' || !e.data || !e.data.eventName) return;
-    const eventName = e.data.eventName;
-    const data = e.data.data;
+    const eventName = e.data.eventName; const data = e.data.data;
     if (eventName === 'loadComplete') {
         const nicoIframe = document.getElementById('nico-player');
         if (nicoIframe && nicoIframe.contentWindow) { setTimeout(() => { nicoIframe.contentWindow.postMessage({ sourceConnectorType: 1, playerId: "1", eventName: "play" }, 'https://embed.nicovideo.jp'); startProgressTimer(); }, 150); }
-    } else if (eventName === 'playerMetadataChange') {
-        if (data && data.duration) nicoDuration = data.duration / 1000;
-    } else if (eventName === 'playerPlayTimeChange') {
-        if (data && data.playTime) nicoCurrentTime = data.playTime / 1000;
+    } else if (eventName === 'playerMetadataChange') { if (data && data.duration) nicoDuration = data.duration / 1000;
+    } else if (eventName === 'playerPlayTimeChange') { if (data && data.playTime) nicoCurrentTime = data.playTime / 1000;
     } else if (eventName === 'playerStatusChange') {
         const status = data.playerStatus;
         if (status === 4 && !nicoEndedFlag) { nicoEndedFlag = true; playNextVideo(); } 
@@ -651,8 +497,7 @@ function togglePlay() {
 function updatePlayerUI(item) {
     document.getElementById('widget-title').textContent = item.title; document.getElementById('widget-artist').textContent = item.channelName || item.site;
     const thumb = item.thumbnail || "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>";
-    document.getElementById('widget-art').src = thumb;
-    updatePlayPauseIcon(); scheduleMarqueeUpdate(); 
+    document.getElementById('widget-art').src = thumb; updatePlayPauseIcon(); scheduleMarqueeUpdate(); 
 
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({ title: item.title, artist: item.channelName || item.site, artwork:[{ src: thumb, sizes: '512x512', type: 'image/jpeg' }] });
