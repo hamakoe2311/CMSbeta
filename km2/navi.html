@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CMS Web Player (Multi-UI)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-modern">
+
+    <!-- ファイルインポート画面 -->
+    <div id="import-screen" class="overlay-screen">
+        <div class="start-content panel-glass">
+            <h1 class="theme-text" style="margin-top:0;">CMS Web Player</h1>
+            <p>拡張機能からエクスポートした<br>JSONファイルを読み込んでください。</p>
+            <label for="import-json" class="custom-file-upload theme-btn">
+                <i class="fas fa-file-import"></i> ファイルを選択
+            </label>
+            <input type="file" id="import-json" accept=".json">
+        </div>
+    </div>
+
+    <!-- 再生準備完了画面 -->
+    <div id="ready-screen" class="overlay-screen hidden">
+        <div class="start-content panel-glass" style="text-align: center;">
+            <h2 class="theme-text" style="margin-top:0;">Ready</h2>
+            <p>データの読み込みが完了しました。<br>再生を開始します。</p>
+            <button class="btn-start theme-btn" id="btn-user-start">
+                <i class="fas fa-play"></i> PLAY START
+            </button>
+        </div>
+    </div>
+
+    <!-- 起動画面群 -->
+    <div id="boot-screen" class="overlay-screen hidden" style="z-index: 9998; background:#000; cursor: pointer;">
+        <div class="boot-skip-hint">Click / Touch anywhere to skip</div>
+        <div class="boot-container boot-modern hidden">
+            <div class="modern-logo"><i class="fas fa-layer-group"></i> CMS Player</div>
+            <div class="modern-spinner"></div>
+            <div class="modern-text">Loading Data...</div>
+        </div>
+        <div class="boot-container boot-toyota hidden">
+            <div class="toyota-logo toyota-step">CAR MULTIMEDIA SYSTEM</div>
+            <div class="toyota-warning toyota-step hidden-step">
+                <i class="fas fa-exclamation-triangle" style="color:#ffcc00; font-size: 3rem; margin-bottom: 20px;"></i><br>
+                安全のため、走行中の操作はおやめください。<br>実際の交通規制に従って走行してください。
+            </div>
+        </div>
+        <div class="boot-container boot-nerv hidden">
+            <div class="nerv-scanline"></div>
+            <div class="nerv-top-bar">SYSTEM INITIALIZATION</div>
+            <div class="nerv-center">
+                <h1 class="nerv-title">NERV</h1>
+                <div class="nerv-warning-box">WARNING</div>
+                <div class="nerv-text">TACTICAL NAVIGATION SYSTEM<br><span class="nerv-blink">SYNC RATE: 100%</span></div>
+            </div>
+            <div class="nerv-bottom-log">Loading modules... OK<br>Verifying core systems... OK<br>All systems online.</div>
+        </div>
+    </div>
+
+    <!-- メインプレイヤーUI -->
+    <div id="main-app" class="hidden">
+        
+        <div class="widget-container" id="widget-container">
+            
+            <!-- PCレイアウト用カラム -->
+            <div id="pc-col-1" class="pc-column"></div>
+            <div id="pc-col-2" class="pc-column"></div>
+
+            <!-- 以下はJSによって col-1 か col-2 に振り分けられ、ドラッグで移動可能 -->
+
+            <!-- [1] 時計ウィジェット -->
+            <div id="widget-clock" class="panel-glass layout-block">
+                <div class="drag-handle" title="ドラッグして移動"><i class="fas fa-grip-horizontal"></i></div>
+                <div class="clock-inner">
+                    <div id="clock-date">----/--/--</div>
+                    <div id="clock-time" class="theme-text">00:00:00</div>
+                </div>
+                <!-- PCシンプルモード用: リスト表示切替ボタン -->
+                <div id="list-toggle-wrapper">
+                    <button id="btn-toggle-list" title="リストの表示/非表示">
+                        <i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- [2] 動画プレイヤー -->
+            <div id="widget-player" class="panel-glass layout-block">
+                <div class="drag-handle" title="ドラッグして移動"><i class="fas fa-grip-horizontal"></i></div>
+                <div id="player-container"></div>
+            </div>
+
+            <!--[3] 操作パネルとプレイヤー情報 -->
+            <div id="widget-controls" class="panel-glass widget-player layout-block">
+                <div class="drag-handle" title="ドラッグして移動"><i class="fas fa-grip-horizontal"></i></div>
+                <div class="player-controls-inner">
+                    <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art" title="タップでプレイヤーを拡大">
+                    
+                    <div class="widget-info-container" title="タップでプレイヤーを拡大">
+                        <div class="widget-info overflow-hidden">
+                            <div class="marquee-wrapper">
+                                <h2 id="widget-title" class="theme-text marquee-content">Not Playing</h2>
+                            </div>
+                            <div class="marquee-wrapper">
+                                <p id="widget-artist" class="marquee-content">---</p>
+                            </div>
+                        </div>
+
+                        <div class="progress-area">
+                            <span id="time-current" class="time-text">0:00</span>
+                            <div class="progress-container" id="progress-container">
+                                <div class="progress-bar" id="progress-bar"></div>
+                            </div>
+                            <span id="time-duration" class="time-text">0:00</span>
+                        </div>
+                        
+                        <div class="widget-controls">
+                            <div class="controls-main">
+                                <button id="widget-btn-prev" title="前の動画"><i class="fas fa-backward-step"></i></button>
+                                <button id="widget-btn-play" class="play-btn theme-btn" title="再生/一時停止"><i class="fas fa-play" id="widget-play-icon"></i></button>
+                                <button id="widget-btn-next" title="次の動画"><i class="fas fa-forward-step"></i></button>
+                                <button id="widget-btn-fullscreen" title="全画面表示"><i class="fas fa-expand"></i></button>
+                            </div>
+                            <button id="btn-open-settings" title="設定" class="settings-btn"><i class="fas fa-cog"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--[4] ライブラリ (検索・フォルダ・リスト) -->
+            <div id="widget-library" class="layout-block">
+                <div class="drag-handle" title="ドラッグして移動" style="top: 10px; right: 10px;"><i class="fas fa-grip-horizontal"></i></div>
+                
+                <!-- モバイル特化用 ツール -->
+                <div id="mobile-tools-wrapper">
+                    <div class="current-folder-info panel-glass" id="btn-open-mobile-folder">
+                        <div style="display:flex; align-items: center; padding: 15px;">
+                            <i class="fas fa-play-circle" style="font-size: 1.8rem; margin-right: 15px; color: var(--text-color);"></i>
+                            <div style="display:flex; flex-direction:column; flex:1;">
+                                <span id="current-folder-name" style="font-weight:bold; font-size:1.1rem;">All</span>
+                                <span style="font-size:0.8rem; opacity:0.8;" id="current-folder-count">--件のアイテム</span>
+                            </div>
+                            <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">フォルダ</span>
+                        </div>
+                    </div>
+                    <button id="btn-toggle-mobile-nav" class="panel-glass" title="検索・ソートを表示">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+
+                <div id="library-nav-wrapper" class="panel-glass">
+                   <!-- <h3 class="library-title theme-text" style="margin-right: 15px;">Library</h3>-->
+                    <div class="controls-wrapper">
+                        <label class="filter-option" style="cursor: pointer;">
+                            <input type="checkbox" id="exclude-nico"> ニコ除外
+                        </label>
+                        <select id="widget-sort-select" class="widget-search">
+                            <option value="custom">🔢 カスタム順</option>
+                            <option value="newest">📅 新しい順</option>
+                            <option value="oldest">📅 古い順</option>
+                            <option value="playCount_desc">▶ 再生数順</option>
+                            <option value="title_asc">🔤 名前 (A-Z)</option>
+                            <option value="title_desc">🔤 名前 (Z-A)</option>
+                        </select>
+                        <input type="text" id="widget-search-box" class="widget-search" placeholder="Search...">
+                    </div>
+                </div>
+
+                <div class="library-lists-container">
+                    <div id="widget-folder-list-wrapper" class="panel-glass">
+                        <div class="w-folder-list" id="widget-folder-list"></div>
+                    </div>
+                    <div id="widget-track-list-wrapper" class="panel-glass">
+                        <div class="w-track-list" id="widget-track-list"></div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- モバイル特化用 フォルダ選択モーダル -->
+    <div id="mobile-folder-modal" class="overlay-screen hidden" style="z-index: 9500; align-items: flex-end;">
+        <div class="panel-glass settings-window" style="width: 100%; max-width: none; max-height: 75vh; padding: 0; display: flex; flex-direction: column; border-bottom-left-radius: 0; border-bottom-right-radius: 0;">
+            <div style="padding: 15px; text-align: center; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 1.2rem;">
+                フォルダを選択
+            </div>
+            <div id="mobile-folder-list-modal" style="overflow-y: auto; flex: 1;"></div>
+            <div style="padding: 15px;">
+                <button id="btn-close-folder-modal" class="theme-btn" style="width: 100%; padding: 15px; border-radius: 30px; font-size: 1.1rem;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定モーダル -->
+    <div id="settings-modal" class="overlay-screen hidden" style="z-index: 9999;">
+        <div class="panel-glass settings-window">
+            <h2 class="theme-text" style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+                <i class="fas fa-cog"></i> System Settings
+            </h2>
+            
+            <div class="setting-scroll-area">
+                
+                <div class="setting-row">
+                    <label>UI Theme</label>
+                    <select id="set-theme" class="widget-search">
+                        <option value="modern">現代UI風 (Modern)</option>
+                        <option value="nerv">エヴァ風 (NERV)</option>
+                        <option value="toyota">トヨタナビ風 (Car Navi)</option>
+                    </select>
+                </div>
+                
+                <div class="setting-row" style="margin-top: 10px;">
+                    <label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする</label>
+                </div>
+                <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
+                    <div style="flex:1;">
+                        <label>全体の文字色</label>
+                        <input type="color" id="set-accent-color" value="#00aaff">
+                    </div>
+                    <div style="flex:1;">
+                        <label>枠線の色</label>
+                        <input type="color" id="set-border-color" value="#ffffff">
+                    </div>
+                </div>
+
+                <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px; margin-top: 10px;">
+                    <div style="flex:1;">
+                        <label>文字サイズ: <span id="font-val">100</span>%</label>
+                        <input type="range" id="set-font-size" min="80" max="150" step="5" value="100">
+                    </div>
+                    <div style="flex:1;">
+                        <label>PC左パネル幅: <span id="pc-width-val">350</span>px</label>
+                        <input type="range" id="set-pc-left-width" min="250" max="600" step="10" value="350">
+                    </div>
+                </div>
+
+                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                    <label>Background Image</label>
+                    <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;">
+                    <button id="btn-clear-bg" class="mini-btn" style="margin-top:5px;">Clear Image</button>
+                </div>
+                <div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px;">
+                    <div style="flex:1;">
+                        <label>表示位置</label>
+                        <select id="set-bg-position" class="widget-search" style="width:100%; font-size:0.8rem;">
+                            <option value="center">中央</option><option value="top">上寄せ</option><option value="bottom">下寄せ</option><option value="left">左寄せ</option><option value="right">右寄せ</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>サイズ</label>
+                        <select id="set-bg-size" class="widget-search" style="width:100%; font-size:0.8rem;">
+                            <option value="cover">全画面拡大</option><option value="contain">全体を収める</option><option value="auto">元のサイズ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="setting-row" style="margin-top: 10px;">
+                    <label>Panel Opacity & Blur: <span id="op-val">0.5</span></label>
+                    <input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5">
+                </div>
+                
+                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                    <label style="color: #ffaa00;"><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※ぼかし効果やアニメーションが停止します。</span>
+                </div>
+                
+                <div class="setting-row" style="margin-top: 5px;">
+                    <label><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label>
+                    <span style="font-size:0.75rem; opacity:0.8;">※リストや検索を隠し、ボタンで開閉できるようにします。</span>
+                </div>
+
+                <div class="setting-row" style="margin-top: 5px;">
+                    <label><input type="checkbox" id="set-mobile-ui"> 📱 操作性UP (スマホ特化レイアウト)</label>
+                </div>
+                
+                <div class="setting-row">
+                    <label><input type="checkbox" id="set-music-mode"> 🎵 動画の表示をオフにする</label>
+                </div>
+                <div class="setting-row">
+                    <label><input type="checkbox" id="set-show-clock"> 🕒 時計を表示</label>
+                </div>
+                <div class="setting-row">
+                    <label><input type="checkbox" id="set-show-thumbnails"> 🖼 リストにサムネイルを表示</label>
+                </div>
+
+                <div class="setting-row" style="margin-top: 10px;">
+                    <label>Boot Sound (起動音)</label>
+                    <input type="file" id="set-boot-sound" accept="audio/*" style="font-size:0.8rem;">
+                    <button id="btn-clear-sound" class="mini-btn" style="margin-top:5px;">Clear Sound</button>
+                </div>
+            </div>
+
+            <div class="settings-actions">
+                <button id="btn-save-settings" class="theme-btn" style="flex:1;">Save & Apply</button>
+                <button id="btn-reset-settings" style="background:#ff4444; color:#fff; border:none; border-radius:30px; cursor:pointer;">Reset</button>
+                <button id="btn-close-settings" style="background:transparent; color:#fff; border:1px solid #fff; border-radius:30px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
