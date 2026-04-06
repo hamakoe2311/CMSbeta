@@ -12,7 +12,7 @@
     <div id="import-screen" class="overlay-screen">
         <div class="start-content panel-glass">
             <h1 class="theme-text" style="margin-top:0;">CMS Web Player</h1>
-            <p>拡張機能からエクスポートした<br>JSONファイルを読み込んでください。</p>
+            <p>JSONファイルを読み込んでください。<br><a href="make.html" style="color:var(--accent-color); font-size:0.9rem;">プレイリストの作成・編集ツールはこちら</a></p>
             <label for="import-json" class="custom-file-upload theme-btn"><i class="fas fa-file-import"></i> ファイルを選択</label>
             <input type="file" id="import-json" accept=".json">
         </div>
@@ -20,35 +20,16 @@
 
     <div id="ready-screen" class="overlay-screen hidden">
         <div class="start-content panel-glass" style="text-align: center;">
-            <h2 class="theme-text" style="margin-top:0;">Ready</h2>
-            <p>データの読み込みが完了しました。</p>
+            <h2 class="theme-text" style="margin-top:0;">Ready</h2><p>データの読み込みが完了しました。</p>
             <button class="btn-start theme-btn" id="btn-user-start"><i class="fas fa-play"></i> PLAY START</button>
         </div>
     </div>
 
     <div id="boot-screen" class="overlay-screen hidden" style="z-index: 9998; background:#000; cursor: pointer;">
         <div class="boot-skip-hint">Click / Touch anywhere to skip</div>
-        <div class="boot-container boot-modern hidden">
-            <div class="modern-logo"><i class="fas fa-layer-group"></i> CMS Player</div>
-            <div class="modern-spinner"></div>
-            <div class="modern-text">Loading Data...</div>
-        </div>
-        <div class="boot-container boot-toyota hidden">
-            <div class="toyota-logo toyota-step">CAR MULTIMEDIA SYSTEM</div>
-            <div class="toyota-warning toyota-step hidden-step">
-                <i class="fas fa-exclamation-triangle" style="color:#ffcc00; font-size: 3rem; margin-bottom: 20px;"></i><br>安全のため、走行中の操作はおやめください。
-            </div>
-        </div>
-        <div class="boot-container boot-nerv hidden">
-            <div class="nerv-scanline"></div>
-            <div class="nerv-top-bar">SYSTEM INITIALIZATION</div>
-            <div class="nerv-center">
-                <h1 class="nerv-title">NERV</h1>
-                <div class="nerv-warning-box">WARNING</div>
-                <div class="nerv-text">TACTICAL NAVIGATION SYSTEM<br><span class="nerv-blink">SYNC RATE: 100%</span></div>
-            </div>
-            <div class="nerv-bottom-log">Loading modules... OK<br>Verifying core systems... OK<br>All systems online.</div>
-        </div>
+        <div class="boot-container boot-modern hidden"><div class="modern-logo"><i class="fas fa-layer-group"></i> CMS Player</div><div class="modern-spinner"></div></div>
+        <div class="boot-container boot-toyota hidden"><div class="toyota-logo toyota-step">CAR MULTIMEDIA SYSTEM</div></div>
+        <div class="boot-container boot-nerv hidden"><div class="nerv-scanline"></div><div class="nerv-center"><h1 class="nerv-title">NERV</h1><div class="nerv-warning-box">WARNING</div></div></div>
     </div>
 
     <div id="main-app" class="hidden">
@@ -58,10 +39,7 @@
 
             <div id="widget-clock" class="panel-glass layout-block">
                 <div class="drag-handle"><i class="fas fa-grip-horizontal"></i></div>
-                <div class="clock-inner">
-                    <div id="clock-date">----/--/--</div>
-                    <div id="clock-time" class="theme-text">00:00:00</div>
-                </div>
+                <div class="clock-inner"><div id="clock-date">----/--/--</div><div id="clock-time" class="theme-text">00:00:00</div></div>
                 <div id="list-toggle-wrapper"><button id="btn-toggle-list"><i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span></button></div>
             </div>
 
@@ -131,6 +109,7 @@
         </div>
     </div>
 
+    <!-- スマホ用フォルダ選択 -->
     <div id="mobile-folder-modal" class="overlay-screen hidden" style="z-index: 9500; align-items: flex-end;">
         <div class="panel-glass settings-window" style="width: 100%; max-width: none; max-height: 75vh; padding: 0; display: flex; flex-direction: column; border-bottom-left-radius: 0; border-bottom-right-radius: 0;">
             <div style="padding: 15px; text-align: center; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 1.2rem;">フォルダを選択</div>
@@ -139,40 +118,55 @@
         </div>
     </div>
 
+    <!-- 設定モーダル -->
     <div id="settings-modal" class="overlay-screen hidden" style="z-index: 9999;">
         <div class="panel-glass settings-window">
-            <h2 class="theme-text" style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:10px;"><i class="fas fa-cog"></i> System Settings</h2>
-            <div class="setting-scroll-area">
-                <div class="setting-row">
-                    <label>UI Theme</label>
-                    <select id="set-theme" class="widget-search"><option value="modern">現代UI風 (Modern)</option><option value="nerv">エヴァ風 (NERV)</option><option value="toyota">トヨタナビ風 (Car Navi)</option></select>
-                </div>
-                <div class="setting-row" style="margin-top: 10px;"><label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする</label></div>
-                <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
-                    <div style="flex:1;"><label>全体の文字色</label><input type="color" id="set-accent-color" value="#00aaff"></div>
-                    <div style="flex:1;"><label>枠線の色</label><input type="color" id="set-border-color" value="#ffffff"></div>
-                </div>
-                <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px; margin-top: 10px;">
-                    <div style="flex:1;"><label>文字サイズ: <span id="font-val">100</span>%</label><input type="range" id="set-font-size" min="80" max="150" step="5" value="100"></div>
-                    <div style="flex:1;"><label>PC左パネル幅: <span id="pc-width-val">350</span>px</label><input type="range" id="set-pc-left-width" min="250" max="600" step="10" value="350"></div>
-                </div>
-                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;"><label>Background Image</label><input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;"></div>
-                <div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px;">
-                    <div style="flex:1;"><label>表示位置</label><select id="set-bg-position" class="widget-search" style="width:100%; font-size:0.8rem;"><option value="center">中央</option><option value="top">上</option><option value="bottom">下</option></select></div>
-                    <div style="flex:1;"><label>サイズ</label><select id="set-bg-size" class="widget-search" style="width:100%; font-size:0.8rem;"><option value="cover">全画面</option><option value="contain">全体収める</option></select></div>
-                </div>
-                <div class="setting-row" style="margin-top: 10px;"><label>Panel Opacity: <span id="op-val">0.5</span></label><input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5"></div>
-                
-                <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                    <label style="color: #ffaa00;"><input type="checkbox" id="set-data-saver"> 📉 データセーバー (低画質再生)</label>
-                    <span style="font-size:0.75rem; opacity:0.8;">※通信量を抑えます（YouTube等一部対応）</span>
-                </div>
-                <div class="setting-row" style="margin-top: 5px;"><label><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label></div>
-                <div class="setting-row" style="margin-top: 5px;"><label><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label></div>
-                <div class="setting-row"><label><input type="checkbox" id="set-music-mode"> 🎵 音楽モード (モバイルSpotify風UI)</label></div>
-                <div class="setting-row"><label><input type="checkbox" id="set-show-clock"> 🕒 時計を表示</label></div>
-                <div class="setting-row"><label><input type="checkbox" id="set-show-thumbnails"> 🖼 サムネイルを表示</label></div>
+            <h2 class="theme-text" style="margin-top:0; padding-bottom:5px;"><i class="fas fa-cog"></i> System Settings</h2>
+            
+            <!-- 🌟 設定タブ -->
+            <div class="settings-tabs">
+                <button class="tab-btn active" data-tab="basic">基本設定</button>
+                <button class="tab-btn" data-tab="advanced">詳細レイアウト</button>
             </div>
+
+            <div class="setting-scroll-area">
+                <!-- 基本設定タブ -->
+                <div id="tab-basic" class="tab-content active">
+                    <div class="setting-row">
+                        <label>テーマ</label>
+                        <select id="set-theme" class="widget-search"><option value="modern">現代UI風 (Modern)</option><option value="nerv">エヴァ風 (NERV)</option><option value="toyota">トヨタナビ風 (Car Navi)</option></select>
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                        <label style="color: #ffaa00;"><input type="checkbox" id="set-data-saver"> 📉 データセーバー (低画質再生)</label>
+                        <span style="font-size:0.75rem; opacity:0.8;">※通信量を抑えます（YouTube等一部対応）</span>
+                    </div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label></div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-music-mode"> 🎵 音楽モード (モバイルSpotify風UI)</label></div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-show-thumbnails"> 🖼 サムネイルを表示</label></div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-show-clock"> 🕒 時計を表示</label></div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label></div>
+                </div>
+
+                <!-- 詳細レイアウトタブ -->
+                <div id="tab-advanced" class="tab-content hidden">
+                    <div class="setting-row"><label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする</label></div>
+                    <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
+                        <div style="flex:1;"><label>文字色</label><input type="color" id="set-accent-color" value="#00aaff"></div>
+                        <div style="flex:1;"><label>枠線の色</label><input type="color" id="set-border-color" value="#ffffff"></div>
+                    </div>
+                    <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px; margin-top: 10px;">
+                        <div style="flex:1;"><label>文字サイズ: <span id="font-val">100</span>%</label><input type="range" id="set-font-size" min="80" max="150" step="5" value="100"></div>
+                        <div style="flex:1;"><label>PC左パネル幅: <span id="pc-width-val">350</span>px</label><input type="range" id="set-pc-left-width" min="250" max="600" step="10" value="350"></div>
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;"><label>背景画像</label><input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem;"></div>
+                    <div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px;">
+                        <div style="flex:1;"><label>表示位置</label><select id="set-bg-position" class="widget-search" style="width:100%; font-size:0.8rem;"><option value="center">中央</option><option value="top">上</option><option value="bottom">下</option></select></div>
+                        <div style="flex:1;"><label>サイズ</label><select id="set-bg-size" class="widget-search" style="width:100%; font-size:0.8rem;"><option value="cover">全画面</option><option value="contain">全体収める</option></select></div>
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px;"><label>パネルの透明度: <span id="op-val">0.5</span></label><input type="range" id="set-opacity" min="0" max="1" step="0.05" value="0.5"></div>
+                </div>
+            </div>
+
             <div class="settings-actions">
                 <button id="btn-save-settings" class="theme-btn" style="flex:1;">Save & Apply</button>
                 <button id="btn-reset-settings" style="background:#ff4444; color:#fff; border:none; border-radius:30px; cursor:pointer;">Reset</button>
