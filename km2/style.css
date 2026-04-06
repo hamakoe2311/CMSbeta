@@ -1,0 +1,373 @@
+:root {
+    --bg-color: #0f172a;
+    --panel-rgb: 255, 255, 255;
+    --panel-alpha: 0.5;
+    --panel-blur: 10px;
+    --border-color: rgba(255, 255, 255, 0.15);
+    --text-color: #fff;
+    --sub-text-color: rgba(255, 255, 255, 0.7);
+    --accent-color: #00aaff;
+    --panel-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    --border-radius: 20px;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    
+    --base-font-size: 100%;
+    --pc-left-width: 350px;
+    --bg-image: none;
+    --bg-position: center;
+    --bg-size: cover;
+}
+
+body.theme-toyota {
+    --bg-color: #0a0a0c;
+    --panel-rgb: 20, 25, 30;
+    --border-color: #004488;
+    --accent-color: #00aaff;
+    --panel-shadow: inset 0 0 10px rgba(0, 170, 255, 0.1);
+    --border-radius: 4px;
+    --font-family: "Meiryo", "Hiragino Kaku Gothic Pro", sans-serif;
+}
+
+body.theme-nerv {
+    --bg-color: #000;
+    --panel-rgb: 0, 0, 0;
+    --border-color: #ff3300;
+    --accent-color: #ff9d00;
+    --text-color: #ff9d00;
+    --sub-text-color: rgba(255, 157, 0, 0.7);
+    --panel-shadow: 0 0 10px rgba(255, 51, 0, 0.3);
+    --border-radius: 0px;
+    --font-family: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", "MS PMincho", serif;
+}
+body.theme-nerv * { font-weight: bold; letter-spacing: 1px; }
+
+html { font-size: var(--base-font-size); }
+
+/* 🌟 全体スクロール（ラバーバンド現象など）を防止 */
+body, html {
+    margin: 0; padding: 0; width: 100%; height: 100dvh;
+    font-family: var(--font-family); background-color: var(--bg-color);
+    background-image: var(--bg-image); background-position: var(--bg-position);
+    background-size: var(--bg-size); background-repeat: no-repeat;
+    color: var(--text-color); overflow: hidden; user-select: none;
+    overscroll-behavior: none; touch-action: none;
+}
+
+/* スクロールが必要な部分だけ波及を止める */
+.w-track-list, .w-folder-list, .setting-scroll-area, #mobile-folder-list-modal {
+    overscroll-behavior: contain; touch-action: pan-y;
+}
+
+/* iOS用 疑似フルスクリーン */
+body.pseudo-fullscreen #main-app {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10000; background: var(--bg-color);
+}
+
+.hidden { display: none !important; }
+.overflow-hidden { overflow: hidden; }
+
+.panel-glass {
+    background: rgba(var(--panel-rgb), var(--panel-alpha));
+    backdrop-filter: blur(var(--panel-blur)); -webkit-backdrop-filter: blur(var(--panel-blur));
+    border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: var(--panel-shadow);
+}
+
+/* ⚡ 軽量化モード */
+body.performance-mode .panel-glass {
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important; box-shadow: none !important;
+    background: var(--bg-color) !important; border: 1px solid var(--border-color);
+}
+body.performance-mode .is-marquee { animation: none !important; transform: none !important; }
+body.performance-mode .w-t-playing-icon { animation: none !important; }
+body.performance-mode .boot-skip-hint, body.performance-mode .modern-spinner, body.performance-mode .nerv-blink, body.performance-mode .nerv-scanline { animation: none !important; display: none !important;}
+
+
+.theme-text { color: var(--text-color); }
+.theme-btn {
+    background: var(--text-color); color: #000; border: none; border-radius: var(--border-radius);
+    cursor: pointer; font-weight: bold; transition: 0.2s;
+}
+.theme-btn:hover { filter: brightness(1.2); }
+
+/* --- オーバーレイ / Boot画面 --- */
+.overlay-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); z-index: 9000; }
+.start-content { padding: 40px; text-align: center; }
+.start-content p { margin-bottom: 20px; }
+.custom-file-upload { display: inline-block; padding: 10px 20px; cursor: pointer; }
+#import-json { display: none; }
+.btn-start { padding: 15px 30px; font-size: 1.2rem; }
+
+.boot-skip-hint { position: absolute; bottom: 30px; right: 30px; color: rgba(255,255,255,0.4); font-size: 0.9rem; animation: pulse-icon 2s infinite; pointer-events: none; }
+.boot-container { width: 100%; height: 100%; position: absolute; top:0; left:0; display: flex; justify-content: center; align-items: center; }
+.boot-modern { flex-direction: column; gap: 20px; }
+.modern-logo { font-size: 3rem; color: #fff; font-weight: 300; letter-spacing: 2px; animation: fadeInUp 1s ease; }
+.modern-spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--text-color); border-radius: 50%; animation: spin 1s linear infinite; }
+.modern-text { color: #888; letter-spacing: 1px; animation: fadeInUp 1.5s ease; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.boot-toyota { background: #050505; flex-direction: column; }
+.toyota-step { transition: opacity 0.8s ease; position: absolute; text-align: center; }
+.toyota-logo { font-size: 2.5rem; color: var(--text-color); letter-spacing: 3px; font-weight: bold; }
+.toyota-warning { font-size: 1.5rem; line-height: 1.6; color: #eee; }
+.hidden-step { opacity: 0; pointer-events: none; }
+
+.boot-nerv { flex-direction: column; background: #000; border: 10px solid var(--border-color); box-sizing: border-box; }
+.nerv-scanline { position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: rgba(255, 157, 0, 0.6); animation: scan 2s linear infinite; z-index: 10; }
+.nerv-top-bar { position: absolute; top: 10px; left: 20px; color: var(--border-color); font-family: monospace; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; }
+.nerv-bottom-log { position: absolute; bottom: 20px; left: 20px; color: var(--text-color); font-family: monospace; font-size: 1rem; opacity: 0.8; }
+.nerv-center { text-align: center; }
+.nerv-title { font-size: 7rem; color: var(--text-color); margin: 0; border-bottom: 5px solid var(--text-color); line-height: 1; }
+.nerv-warning-box { background: var(--border-color); color: #000; font-weight: bold; font-size: 2.5rem; padding: 5px 30px; letter-spacing: 5px; margin: 20px auto; display: inline-block; animation: blink 0.5s infinite; }
+.nerv-text { font-family: monospace; color: var(--text-color); font-size: 1.5rem; letter-spacing: 2px; }
+.nerv-blink { animation: blink 1s infinite; }
+@keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes pulse-icon { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* =========================================
+   メインレイアウト設定 (自由配置対応)
+   ========================================= */
+.widget-container { display: flex; width: 100%; height: 100%; }
+
+/* 🌟 ドラッグハンドル (PCでのみ表示) */
+.drag-handle {
+    position: absolute; top: 5px; right: 5px; color: var(--sub-text-color);
+    cursor: grab; padding: 5px; z-index: 10; opacity: 0; transition: opacity 0.2s; display: none;
+}
+.layout-block { position: relative; }
+.layout-block:hover .drag-handle { opacity: 1; }
+.layout-block.dragging { opacity: 0.5; border: 1px dashed var(--accent-color); }
+
+/* --- PC用 カラムベースレイアウト --- */
+@media (min-width: 901px) {
+    .widget-container {
+        display: grid; grid-template-columns: var(--pc-left-width) 1fr;
+        gap: 15px; width: 95vw; max-width: 1500px; height: 95vh; margin: 2.5vh auto;
+    }
+    .pc-column { display: flex; flex-direction: column; gap: 15px; height: 100%; min-height: 0; }
+    
+    body.music-mode #widget-player { display: none !important; }
+    .drag-handle { display: block; }
+}
+
+#clock-widget { display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;}
+.clock-inner { display: flex; flex-direction: column; width: 100%; max-width: 250px; }
+#clock-date { font-size: 1.2rem; font-weight: bold; text-align: left; margin-bottom: 5px; opacity: 0.9; }
+#clock-time { font-size: 2.8rem; font-weight: bold; letter-spacing: 2px; line-height: 1; text-align: right; }
+body:not(.show-clock) .clock-inner { display: none !important; }
+
+#mobile-folder-selector, #mobile-tools-wrapper { display: none; }
+#list-toggle-wrapper { display: none; }
+
+/* --- デスクトップ & iPad用 内部スタイル --- */
+@media (min-width: 901px) {
+    #widget-player { width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; }
+    #widget-controls { display: flex; flex-direction: column; align-items: center; padding: 25px 20px; justify-content: center; flex-shrink: 0;}
+    #widget-clock { padding: 15px; justify-content: flex-start; flex-shrink: 0;}
+    
+    #widget-library { display: flex; flex-direction: column; gap: 15px; flex: 1; min-height: 0; }
+    #library-nav-wrapper { display: flex; align-items: center; padding: 10px 20px; flex-shrink: 0; }
+    
+    .library-lists-container { display: grid; grid-template-columns: 220px 1fr; gap: 15px; flex: 1; min-height: 0; overflow: hidden; }
+    #widget-folder-list-wrapper, #widget-track-list-wrapper { display: flex; flex-direction: column; overflow: hidden; padding: 15px 0; }
+
+    /* 🔵 シンプルレイアウトモード用調整 */
+    body.simple-layout-mode:not(.list-visible) #widget-library { display: none !important; }
+    body.simple-layout-mode.list-visible .library-lists-container { display: flex; flex-direction: column; gap: 15px;}
+    body.simple-layout-mode.list-visible #widget-folder-list-wrapper { max-height: 150px; flex-shrink: 0;}
+
+    /* リスト表示切替ボタン (時計ウィジェット内) */
+    body.simple-layout-mode #list-toggle-wrapper { display: flex; align-items: center; width: 100%; margin-top: 15px; justify-content: center;}
+    #btn-toggle-list { background: transparent; border: none; color: var(--sub-text-color); cursor: pointer; font-size: 0.95rem; padding: 5px 15px; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+    #btn-toggle-list:hover { color: var(--text-color); }
+
+    .player-controls-inner { display: flex; flex-direction: column; align-items: center; width: 100%; text-align: center; }
+    .widget-art { width: 160px; height: 160px; margin-bottom: 20px; border-radius: calc(var(--border-radius) / 2); object-fit: cover; border: 1px solid var(--border-color); }
+    .widget-info-container { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+    .widget-info { width: 100%; }
+    .widget-controls { width: 100%; display: flex; justify-content: center; align-items: center; position: relative; margin-top: 10px;}
+    .controls-main { display: flex; gap: 20px; align-items: center; }
+    .settings-btn { position: absolute; right: 0; }
+
+    body.music-mode .widget-art { width: 220px; height: 220px; }
+}
+
+/* --- モバイル用レイアウト (デフォルトで音楽プレイヤー特化UI) --- */
+@media (max-width: 900px) {
+    #list-toggle-wrapper { display: none !important; }
+    #clock-widget .clock-inner { align-items: center; max-width: none; }
+    #clock-date, #clock-time { text-align: center; }
+
+    /* カラムを解除し flex order で並び替え */
+    .widget-container { display: flex; flex-direction: column; width: 100%; height: 100dvh; overflow: hidden; gap: 0; }
+    .pc-column { display: contents; }
+    
+    .panel-glass { border-radius: 0; border: none; box-shadow: none; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;}
+    
+    #widget-clock { order: 1; padding: 10px; flex-shrink: 0; }
+    
+    body.music-mode #widget-player { display: none !important; }
+    #widget-player { order: 2; width: 100%; aspect-ratio: 16 / 9; flex-shrink: 0; transition: height 0.3s ease, opacity 0.3s ease; }
+    
+    body:not(.music-mode) .widget-art { display: none; }
+
+    #widget-controls { order: 3; padding: 15px; flex-shrink: 0; transition: all 0.3s ease; }
+    .player-controls-inner { flex-direction: column; align-items: center; text-align: center; gap: 10px; width: 100%; transition: all 0.3s ease; }
+    
+    .widget-art { width: 45vw; max-width: 250px; height: 45vw; max-height: 250px; border-radius: 12px; margin: 0 auto; object-fit: cover; box-shadow: 0 10px 20px rgba(0,0,0,0.5); cursor: pointer; transition: all 0.3s ease;}
+    .widget-info-container { width: 100%; max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: all 0.3s ease;}
+    .widget-info h2 { font-size: 1.2rem; }
+    .widget-info p { font-size: 1rem; opacity: 0.8;}
+    .progress-area { margin: 10px 0; }
+    
+    .widget-controls { display: flex; justify-content: center; align-items: center; width: 100%; position: relative; transition: all 0.3s ease;}
+    .controls-main { display: flex; justify-content: center; align-items: center; gap: 8vw; transition: all 0.3s ease;}
+    .widget-controls button { padding: 8px; font-size: 1.5rem; flex-shrink: 0; }
+    .widget-controls .play-btn { width: 65px; height: 65px; font-size: 1.8rem; }
+    .settings-btn { position: absolute; right: 0; }
+    
+    #widget-library { order: 4; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+    
+    /* 📱 モバイル特化 ツールとナビ */
+    #mobile-tools-wrapper { display: flex; gap: 10px; margin: 5px 15px; flex-shrink: 0; order: 1; }
+    #btn-open-mobile-folder { flex: 1; border-radius: 12px; cursor: pointer; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); }
+    #btn-toggle-mobile-nav { width: 55px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; cursor: pointer; border: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-color); }
+    
+    #library-nav-wrapper { order: 2; margin: 0 15px 5px 15px; border-radius: 12px; flex-direction: column; display: none; }
+    body.show-mobile-nav #library-nav-wrapper { display: flex !important; }
+    .controls-wrapper { flex-direction: column; width: 100%; align-items: stretch;}
+    .library-title { display: none; }
+
+    #widget-folder-list-wrapper { display: none; }
+
+    .library-lists-container { order: 3; display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+    
+    /* 🌟 リスト内部のみスクロール可能にする (全体スクロール防止) */
+    #widget-track-list-wrapper { 
+        flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; margin-top: 10px; overflow: hidden;
+    }
+    .w-track-list { flex: 1; overflow-y: auto; padding: 0 15px 20px 15px; position: relative; }
+    .w-t-item { padding: 12px 20px; border-radius: 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    /* 📱 スクロール時のプレイヤー最小化 (player-minimized) */
+    body.player-minimized #widget-player { height: 0; padding: 0; margin: 0; border: none; opacity: 0;}
+    body.player-minimized #widget-controls { padding: 10px 15px; border-bottom: 1px solid var(--border-color); background: rgba(var(--panel-rgb), 0.9); }
+    body.player-minimized .player-controls-inner { flex-direction: row; gap: 15px; justify-content: space-between; }
+    body.player-minimized .widget-art { width: 45px; height: 45px; margin: 0; border-radius: 6px; box-shadow: none; display: block !important; flex-shrink: 0; }
+    body.player-minimized .widget-info-container { flex: 1; flex-direction: row; align-items: center; justify-content: space-between; margin: 0; gap: 10px; }
+    body.player-minimized .widget-info { max-width: 150px; text-align: left; }
+    body.player-minimized .widget-info h2 { font-size: 1rem; margin: 0; }
+    body.player-minimized .widget-info p { font-size: 0.8rem; margin: 0; }
+    body.player-minimized .progress-area { display: none; }
+    body.player-minimized .widget-controls { width: auto; position: static; }
+    body.player-minimized .controls-main { gap: 15px; }
+    body.player-minimized .widget-controls .play-btn { width: 40px; height: 40px; font-size: 1.2rem; }
+    body.player-minimized .widget-controls button:not(.play-btn):not(#widget-btn-next) { display: none; }
+    body.player-minimized .widget-controls #widget-btn-next { display: block; font-size: 1.2rem; padding: 5px; }
+    body.player-minimized .settings-btn { display: none; }
+    body.player-minimized #widget-clock { display: none; }
+}
+
+
+/* =========================================
+   コンポーネント・モジュール
+   ========================================= */
+
+#player-container { width: 100%; height: 100%; background: #000; border-radius: inherit; overflow: hidden; position: relative;}
+#player-container iframe { width: 100%; height: 100%; border: none; }
+
+.widget-info h2 { font-size: 1.15rem; margin: 0 0 5px 0; }
+.widget-info p { font-size: 0.85rem; opacity: 0.8; margin: 0; }
+
+.widget-controls button { background: transparent; border: none; color: var(--text-color); font-size: 1.3rem; cursor: pointer; transition: transform 0.1s; padding: 8px; }
+.widget-controls button:active { transform: scale(0.9); }
+.widget-controls .play-btn { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; padding: 0; }
+body.theme-nerv .widget-controls .play-btn { border-radius: 0; border: 1px solid var(--text-color); background: transparent; color: var(--text-color); }
+
+.progress-area { display: flex; align-items: center; gap: 10px; width: 100%; }
+.time-text { font-size: 0.75rem; opacity: 0.8; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.progress-container { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; cursor: pointer; position: relative; }
+.progress-bar { height: 100%; width: 0%; background: var(--text-color); border-radius: 3px; pointer-events: none; transition: width 0.1s linear; }
+
+.controls-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
+.filter-option { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; }
+.widget-search { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 6px 15px; color: var(--text-color); outline: none; flex: 1; min-width: 120px; }
+select.widget-search option { background-color: var(--bg-color); color: var(--text-color); }
+
+.w-folder-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; height: 100%; padding: 0 15px; }
+
+.w-f-item { padding: 12px 15px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; font-size: 0.95rem; flex-shrink: 0; white-space: nowrap; color: var(--text-color); }
+.w-f-item:hover { background: rgba(128,128,128,0.2); }
+
+.w-t-item { display: flex; align-items: center; padding: 10px; border-radius: calc(var(--border-radius) / 2); cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; flex-shrink: 0; color: var(--text-color); }
+.w-t-item:hover { background: rgba(128,128,128,0.2); }
+
+.w-f-item.active { background: rgba(128,128,128,0.3); font-weight: bold; border-left: 3px solid var(--text-color); color: var(--text-color); }
+.w-t-item.active { background: rgba(128,128,128,0.3); border-left: 3px solid var(--text-color); color: var(--text-color); }
+.w-t-item.active .track-title-text { color: var(--text-color); }
+.w-t-item.active .track-artist-text { color: var(--text-color); opacity: 0.8; }
+
+body.theme-nerv .w-f-item.active, body.theme-nerv .w-t-item.active { background: var(--text-color); color: #000 !important; border-left: none; }
+body.theme-nerv .w-t-item.active .track-title-text, body.theme-nerv .w-t-item.active .track-artist-text { color: #000; }
+body.theme-toyota .w-f-item.active, body.theme-toyota .w-t-item.active { background: rgba(255, 255, 255, 0.1); border-left-color: var(--text-color); }
+
+.w-t-idx { width: 25px; text-align: right; margin-right: 12px; opacity: 0.6; font-size: 0.85rem; flex-shrink: 0;}
+.w-t-playing-icon { display: flex; justify-content: center; align-items: center; width: 25px; margin-right: 12px; color: var(--text-color); animation: pulse-icon 1.5s infinite; flex-shrink: 0;}
+
+.w-t-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 12px; flex-shrink: 0; display: none; }
+body.show-list-thumbnails .w-t-thumb { display: block; }
+@media (max-width: 900px) { .w-t-thumb { display: block; width: 55px; height: 55px; border-radius: 6px; } }
+
+.w-t-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.track-title-text { font-size: 0.95rem; font-weight: bold; transition: color 0.2s; }
+.track-artist-text { font-size: 0.75rem; opacity: 0.7; transition: color 0.2s; }
+
+.m-f-item { display: flex; justify-content: space-between; align-items: center; padding: 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 1.1rem; cursor: pointer; color: var(--text-color);}
+.m-f-item.active { color: var(--text-color); font-weight: bold; }
+
+.marquee-wrapper { overflow: hidden; white-space: nowrap; position: relative; width: 100%; }
+.marquee-content { display: inline-block; will-change: transform; }
+.is-marquee { animation: scroll-left-alternate 8s linear infinite; }
+@keyframes scroll-left-alternate {
+    0%, 15% { transform: translateX(0); }
+    45%, 55% { transform: translateX(calc(var(--parent-width) - 100%)); }
+    85%, 100% { transform: translateX(0); }
+}
+
+/* === Settings Modal === */
+.settings-window { width: 500px; max-width: 90%; padding: 30px; display: flex; flex-direction: column; gap: 15px; }
+.setting-scroll-area { max-height: 60vh; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 10px; }
+.setting-row { display: flex; flex-direction: column; gap: 5px; }
+.setting-row label { font-size: 0.9rem; font-weight: bold; color: var(--text-color); display: flex; align-items: center; gap: 8px; cursor: pointer;}
+.mini-btn { background: rgba(255,255,255,0.2); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 10px; cursor: pointer; border-radius: 4px; }
+.settings-actions { display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+.settings-actions button { padding: 10px; font-weight: bold; }
+.setting-row input[type="file"] { padding: 5px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); }
+.setting-row input[type="file"]::file-selector-button { background: var(--text-color); color: #000; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-right: 10px; }
+.setting-row input[type="range"] { accent-color: var(--text-color); }
+
+/* 🌟 iOS完全対応 カスタムチェックボックス */
+input[type="checkbox"] { 
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px; border: 2px solid var(--border-color); border-radius: 4px;
+    background-color: transparent; cursor: pointer; position: relative; vertical-align: middle; margin: 0; flex-shrink:0;
+}
+input[type="checkbox"]:checked {
+    background-color: var(--text-color); border-color: var(--text-color);
+}
+input[type="checkbox"]:checked::after {
+    content: ''; position: absolute; top: 1px; left: 5px; width: 5px; height: 11px;
+    border: solid var(--bg-color); border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+
+input[type="color"] {
+    appearance: none; -webkit-appearance: none; background-color: transparent;
+    border: 2px solid var(--border-color); border-radius: 8px; width: 100%; height: 40px; padding: 0; cursor: pointer;
+}
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.5); border-radius: 3px; }
