@@ -9,13 +9,13 @@ let appSettings = { ...defaultSettings };
 
 let allItems = [];
 let folderSettings = [];
-let musicLibrary = [];
+let musicLibrary =[];
 let currentFolderId = null;
 let currentSortOrder = 'custom';
 let currentSearchQuery = "";
 let excludeNico = false;
 
-let currentPlaylist = [];
+let currentPlaylist =[];
 let currentIndex = 0;
 let isPlaying = false;
 let currentPlayingItem = null;
@@ -35,7 +35,7 @@ let progressInterval;
 
 let currentRenderedCount = 0;
 const RENDER_CHUNK_SIZE = 50;
-let currentRenderSongs = [];
+let currentRenderSongs =[];
 
 const importScreen = document.getElementById('import-screen');
 const readyScreen = document.getElementById('ready-screen');
@@ -43,6 +43,39 @@ const bootScreen = document.getElementById('boot-screen');
 const mainApp = document.getElementById('main-app');
 const folderListEl = document.getElementById('widget-folder-list');
 const trackListEl = document.getElementById('widget-track-list');
+
+// --- 🌟 追加: バックグラウンド維持のための無音オーディオハック ---
+let silentAudio = null;
+
+function setupBackgroundPlayback() {
+    if (!silentAudio) {
+        // 約100msの無音のWAVデータ
+        const silentWav = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+        silentAudio = new Audio(silentWav);
+        silentAudio.loop = true;
+        silentAudio.volume = 0.01;
+    }
+    
+    // 画面が再度表示された時にプログレスバーのズレを直す
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === 'visible') {
+            updateProgress();
+        }
+    });
+}
+
+function startSilentAudio() {
+    if (silentAudio && silentAudio.paused) {
+        silentAudio.play().catch(e => console.warn('無音オーディオがブロックされました'));
+    }
+}
+
+function stopSilentAudio() {
+    if (silentAudio && !silentAudio.paused) {
+        silentAudio.pause();
+    }
+}
+// -----------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
     loadSettings(); applyThemeSettings(); applyPCLayoutDOM(); initMainDnDUI(); 
@@ -159,7 +192,6 @@ function saveMainLayout() {
 function setupSettingsModal() {
     const modal = document.getElementById('settings-modal');
     
-    // タブ切り替えロジック
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -235,7 +267,13 @@ function handleFileImport(event) {
 
 function startGame() {
     readyScreen.classList.add('hidden'); bootScreen.classList.remove('hidden'); document.querySelectorAll('.boot-container').forEach(el => el.classList.add('hidden'));
+    
     const activeBoot = document.querySelector(`.boot-${appSettings.theme}`); if (activeBoot) activeBoot.classList.remove('hidden');
+    
+    // 🌟 ここでバックグラウンドハックを初期化
+    setupBackgroundPlayback();
+    startSilentAudio();
+
     bootScreen.addEventListener('click', endBootSequence); bootScreen.addEventListener('touchstart', endBootSequence, {passive: true});
     bootTimeoutId = setTimeout(endBootSequence, 4000);
 }
@@ -249,7 +287,7 @@ function endBootSequence() {
 
 function buildLibrary() {
     let folderMap = {};
-    let folderOrder = []; // 🌟 JSONでの出現順序を記録
+    let folderOrder =[]; 
 
     const itemsToProcess = allItems.filter(item => {
         if (excludeNico && item.site === 'niconico') return false;
@@ -265,7 +303,6 @@ function buildLibrary() {
         });
     });
 
-    // 🌟 JSON内の folderSettings の順序を最優先し、未定義の場合は出現順を維持
     const folderNames = Object.keys(folderMap).sort((a, b) => {
         const setA = folderSettings.find(s => s.folderName === a); const setB = folderSettings.find(s => s.folderName === b);
         const orderA = setA && typeof setA.order === 'number' ? setA.order : folderOrder.indexOf(a) + 10000;
@@ -365,7 +402,7 @@ function handleSortChange(e) { currentSortOrder = e.target.value; buildLibrary()
 function handleNicoFilterChange(e) { excludeNico = e.target.checked; buildLibrary(); renderFolders(); selectFolder(currentFolderId || musicLibrary[0]?.id); }
 
 function setupPlayerControls() {
-    document.getElementById('widget-btn-play').onclick = togglePlay;
+    document.getElementById('widget-btn-play').onclick = () => togglePlay();
     document.getElementById('widget-btn-next').onclick = playNextVideo;
     document.getElementById('widget-btn-prev').onclick = playPrevVideo;
 }
@@ -425,7 +462,7 @@ function createYouTubePlayer(videoId) {
         ytPlayer = new YT.Player('yt-player-mount', {
             height: '100%', width: '100%', videoId: videoId, playerVars: { 'playsinline': 1, 'autoplay': 1, 'rel': 0 },
             events: { 
-                'onReady': (e) => { if(appSettings.dataSaverMode && typeof e.target.setPlaybackQuality === 'function') e.target.setPlaybackQuality('tiny'); isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); },
+                'onReady': (e) => { if(appSettings.dataSaverMode && typeof e.target.setPlaybackQuality === 'function') e.target.setPlaybackQuality('tiny'); isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); startSilentAudio(); },
                 'onStateChange': onPlayerStateChange, 'onError': () => { setTimeout(playNextVideo, 5000); }
             }
         });
@@ -433,9 +470,15 @@ function createYouTubePlayer(videoId) {
 }
 
 function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.PLAYING) { isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); } 
-    else if (event.data === YT.PlayerState.PAUSED) { isPlaying = false; updatePlayPauseIcon(); stopProgressTimer(); } 
-    else if (event.data === YT.PlayerState.ENDED) { stopProgressTimer(); document.getElementById('progress-bar').style.width = '0%'; playNextVideo(); }
+    if (event.data === YT.PlayerState.PLAYING) { 
+        isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); startSilentAudio(); 
+    } 
+    else if (event.data === YT.PlayerState.PAUSED) { 
+        isPlaying = false; updatePlayPauseIcon(); stopProgressTimer(); stopSilentAudio(); 
+    } 
+    else if (event.data === YT.PlayerState.ENDED) { 
+        stopProgressTimer(); document.getElementById('progress-bar').style.width = '0%'; playNextVideo(); 
+    }
 }
 
 function loadVideo(index) {
@@ -471,21 +514,43 @@ function handleNicoMessage(e) {
     const eventName = e.data.eventName; const data = e.data.data;
     if (eventName === 'loadComplete') {
         const nicoIframe = document.getElementById('nico-player');
-        if (nicoIframe && nicoIframe.contentWindow) { setTimeout(() => { nicoIframe.contentWindow.postMessage({ sourceConnectorType: 1, playerId: "1", eventName: "play" }, 'https://embed.nicovideo.jp'); startProgressTimer(); }, 150); }
+        if (nicoIframe && nicoIframe.contentWindow) { setTimeout(() => { nicoIframe.contentWindow.postMessage({ sourceConnectorType: 1, playerId: "1", eventName: "play" }, 'https://embed.nicovideo.jp'); startProgressTimer(); startSilentAudio(); }, 150); }
     } else if (eventName === 'playerMetadataChange') { if (data && data.duration) nicoDuration = data.duration / 1000;
     } else if (eventName === 'playerPlayTimeChange') { if (data && data.playTime) nicoCurrentTime = data.playTime / 1000;
     } else if (eventName === 'playerStatusChange') {
         const status = data.playerStatus;
-        if (status === 4 && !nicoEndedFlag) { nicoEndedFlag = true; playNextVideo(); } 
-        else if (status === 2) { isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); } 
-        else if (status === 3) { isPlaying = false; updatePlayPauseIcon(); stopProgressTimer(); }
+        if (status === 4 && !nicoEndedFlag) { 
+            nicoEndedFlag = true; playNextVideo(); 
+        } 
+        else if (status === 2) { 
+            isPlaying = true; updatePlayPauseIcon(); startProgressTimer(); startSilentAudio(); 
+        } 
+        else if (status === 3) { 
+            isPlaying = false; updatePlayPauseIcon(); stopProgressTimer(); stopSilentAudio(); 
+        }
     } else if (eventName === 'error') setTimeout(() => playNextVideo(), 5000);
 }
 
-function togglePlay() {
+function togglePlay(forcePlay) {
     if (!currentPlayingItem) return;
-    isPlaying = !isPlaying; updatePlayPauseIcon();
-    if (isPlaying) startProgressTimer(); else stopProgressTimer();
+    
+    // 🌟 引数で強制的にPlay/Pauseを指定された場合の処理を追加
+    if (typeof forcePlay === 'boolean') {
+        isPlaying = forcePlay;
+    } else {
+        isPlaying = !isPlaying;
+    }
+
+    updatePlayPauseIcon();
+    
+    if (isPlaying) { 
+        startProgressTimer(); 
+        startSilentAudio(); 
+    } else { 
+        stopProgressTimer(); 
+        stopSilentAudio(); 
+    }
+    
     if (currentPlayingItem.site === 'youtube' && ytPlayer && typeof ytPlayer.playVideo === 'function') {
         if (isPlaying) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
     } else if (currentPlayingItem.site === 'niconico') {
@@ -501,8 +566,12 @@ function updatePlayerUI(item) {
 
     if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({ title: item.title, artist: item.channelName || item.site, artwork:[{ src: thumb, sizes: '512x512', type: 'image/jpeg' }] });
-        navigator.mediaSession.setActionHandler('play', togglePlay); navigator.mediaSession.setActionHandler('pause', togglePlay);
-        navigator.mediaSession.setActionHandler('previoustrack', playPrevVideo); navigator.mediaSession.setActionHandler('nexttrack', playNextVideo);
+        
+        // 🌟 ロック画面からの操作で、確実に 再生(true) / 停止(false) を渡す
+        navigator.mediaSession.setActionHandler('play', () => togglePlay(true)); 
+        navigator.mediaSession.setActionHandler('pause', () => togglePlay(false));
+        navigator.mediaSession.setActionHandler('previoustrack', playPrevVideo); 
+        navigator.mediaSession.setActionHandler('nexttrack', playNextVideo);
     }
 }
 
