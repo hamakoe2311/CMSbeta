@@ -1,180 +1,250 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>家計管理Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>家計管理Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --primary: #00e676;
+            --warn: #ff5252;
+            --text: #ffffff;
+            --sub-text: #aaaaaa;
+        }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; padding-bottom: 80px; }
+        h1, h2 { font-size: 1.2rem; margin-top: 20px; border-left: 4px solid var(--primary); padding-left: 10px; }
+        
+        /* スマホ用UI */
+        .card { background: var(--card); padding: 15px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        input, select, button { 
+            width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; 
+            background: #2c2c2c; color: #fff; font-size: 16px; box-sizing: border-box;
+        }
+        button { background: var(--primary); color: #000; font-weight: bold; border: none; cursor: pointer; }
+        button:active { opacity: 0.8; }
+        .secondary-btn { background: #444; color: #fff; margin-top: 10px; }
 
-<style>
-body { background:#111; color:#fff; font-family:sans-serif; padding:10px;}
-input,button,select{width:100%;margin:5px 0;padding:8px;border-radius:6px;border:none;}
-button{background:#00c853;color:#fff;}
-.card{background:#222;padding:10px;margin:10px 0;border-radius:8px;}
-.warn{color:#ff5252;font-weight:bold;}
-canvas{background:#fff;border-radius:10px;}
-</style>
+        /* 集計エリア */
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .balance-val { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
+        .alert-box { color: var(--warn); font-weight: bold; min-height: 1.2em; margin-bottom: 10px; }
 
+        /* リスト */
+        .item-row { border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+        .item-row:last-child { border: none; }
+        
+        canvas { background: #fff; border-radius: 12px; margin-top: 10px; max-height: 300px; }
+        .comm-info { background: #2c3e50; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; }
+    </style>
 </head>
 <body>
 
 <h1>家計管理Pro</h1>
 
-<input type="file" id="files" multiple>
-<button onclick="exportJSON()">JSON出力</button>
+<!-- ファイル入力 -->
+<div class="card">
+    <label>月別JSONファイルを選択 (複数可)</label>
+    <input type="file" id="files" multiple accept=".json">
+    <div id="commStats" class="comm-info">通信量目安: 0 GB</div>
+</div>
 
-<h2>残金</h2>
-<div id="balance"></div>
+<!-- 集計表示 -->
+<div class="card">
+    <div class="summary-grid">
+        <div>
+            <small>合計残金</small>
+            <div id="balance" class="balance-val">0円</div>
+        </div>
+        <div>
+            <small>予算ステータス</small>
+            <div id="alert" class="alert-box"></div>
+        </div>
+    </div>
+</div>
 
-<h2>警告</h2>
-<div id="alert"></div>
-
-<h2>データ一覧</h2>
-<div id="list"></div>
-
-<h2>グラフ</h2>
+<!-- グラフ -->
+<h2>カテゴリ分析</h2>
 <canvas id="pie"></canvas>
+<h2>支出推移</h2>
 <canvas id="line"></canvas>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- データ編集 -->
+<h2>明細編集</h2>
+<div id="list"></div>
+
+<button onclick="exportJSON()">編集済みデータをJSONで保存</button>
 
 <script>
 let allData = [];
-let budget = 50000; // 仮予算
+let budgetLimit = 50000; // 予算設定
 
-// ファイル読み込み
-document.getElementById("files").addEventListener("change", e=>{
-  const files = e.target.files;
-  allData = [];
+// ファイル読み込み処理
+document.getElementById("files").addEventListener("change", async e => {
+    const files = Array.from(e.target.files);
+    const promises = files.map(file => {
+        return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(JSON.parse(reader.result));
+            reader.readAsText(file);
+        });
+    });
 
-  Array.from(files).forEach(file=>{
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      allData.push(JSON.parse(reader.result));
-      render();
-    };
-    reader.readAsText(file);
-  });
+    allData = await Promise.all(promises);
+    render(true); // 初回読み込み時はリストも描画
 });
 
-// 自動カテゴリ分類
-function autoCategory(name){
-  if(name.includes("コンビニ")) return "食費";
-  if(name.includes("ahamo")||name.includes("povo")) return "通信費";
-  return "その他";
+// 自動カテゴリ分類ロジック
+function autoCategory(name) {
+    if (!name) return "その他";
+    if (name.includes("コンビニ") || name.includes("スーパー") || name.includes("飯")) return "食費";
+    if (name.includes("ahamo") || name.includes("povo") || name.includes("docomo") || name.includes("通信")) return "通信費";
+    if (name.includes("電車") || name.includes("バス") || name.includes("タクシー")) return "交通費";
+    return "その他";
 }
 
-// 描画
-function render(){
-  let totalIncome = 0;
-  let totalExpense = 0;
-  let categoryTotals = {};
-  let daily = {};
+// 描画メイン関数
+// updateListがtrueの時だけHTMLのリストを再構築する（入力中に消えないようにするため）
+function render(updateList = false) {
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let categoryTotals = {};
+    let dailyTotals = {};
+    let totalGB = 0;
 
-  const list = document.getElementById("list");
-  list.innerHTML="";
+    allData.forEach((monthData, mIdx) => {
+        // 収入計算
+        if (monthData.income) {
+            monthData.income.forEach(inc => totalIncome += Number(inc.amount));
+        }
 
-  allData.forEach((monthData,mIndex)=>{
+        // 支出計算
+        if (monthData.expenses) {
+            monthData.expenses.forEach((exp, eIdx) => {
+                // カテゴリ未設定なら自動分類
+                if (!exp.category) exp.category = autoCategory(exp.name);
+                
+                const amt = Number(exp.amount) || 0;
+                totalExpense += amt;
 
-    monthData.expenses.forEach((e,i)=>{
-      if(!e.category) e.category = autoCategory(e.name || "");
+                // カテゴリ別集計
+                categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + amt;
 
-      totalExpense += e.amount;
+                // 日別集計（折れ線用）
+                const date = exp.date || monthData.month || "不明";
+                dailyTotals[date] = (dailyTotals[date] || 0) + amt;
 
-      categoryTotals[e.category]=(categoryTotals[e.category]||0)+e.amount;
-
-      daily[e.date]=(daily[e.date]||0)+e.amount;
-
-      const div=document.createElement("div");
-      div.className="card";
-      div.innerHTML=`
-        ${monthData.month}<br>
-        <input value="${e.name||""}" onchange="edit(${mIndex},${i},'name',this.value)">
-        <input type="number" value="${e.amount}" onchange="edit(${mIndex},${i},'amount',this.value)">
-        <input value="${e.category}" onchange="edit(${mIndex},${i},'category',this.value)">
-      `;
-      list.appendChild(div);
+                // 通信量計算
+                if (exp.category === "通信費") {
+                    if (exp.name.toLowerCase().includes("povo")) totalGB += 20; // 例
+                    if (exp.name.toLowerCase().includes("ahamo")) totalGB += 30; // 例
+                }
+            });
+        }
     });
 
-    if(monthData.income){
-      monthData.income.forEach(i=>{
-        totalIncome+=i.amount;
-      });
+    // 残金表示
+    const balance = totalIncome - totalExpense;
+    document.getElementById("balance").innerText = balance.toLocaleString() + "円";
+    
+    // 通信量表示
+    document.getElementById("commStats").innerText = `通信量目安: 約 ${totalGB} GB`;
+
+    // 警告表示
+    const alertEl = document.getElementById("alert");
+    alertEl.innerText = "";
+    if (balance < 0) alertEl.innerText = "赤字発生！ ";
+    if (totalExpense > budgetLimit) alertEl.innerText += "予算オーバー！";
+
+    // グラフ更新
+    updateCharts(categoryTotals, dailyTotals);
+
+    // リスト描画（重い処理なので必要な時だけ）
+    if (updateList) {
+        const listEl = document.getElementById("list");
+        listEl.innerHTML = "";
+        allData.forEach((monthData, mIdx) => {
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `<h3>${monthData.month || "月不明"}</h3>`;
+            
+            monthData.expenses.forEach((exp, eIdx) => {
+                const row = document.createElement("div");
+                row.className = "item-row";
+                row.innerHTML = `
+                    <input type="text" value="${exp.name || ''}" placeholder="品名" onchange="edit(${mIdx}, ${eIdx}, 'name', this.value)">
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" value="${exp.amount}" placeholder="金額" onchange="edit(${mIdx}, ${eIdx}, 'amount', this.value)">
+                        <input type="text" value="${exp.category}" placeholder="カテゴリ" onchange="edit(${mIdx}, ${eIdx}, 'category', this.value)">
+                    </div>
+                `;
+                card.appendChild(row);
+            });
+            listEl.appendChild(card);
+        });
     }
-  });
-
-  const balance = totalIncome - totalExpense;
-
-  document.getElementById("balance").innerText = balance+"円";
-
-  // 警告
-  let alertText="";
-  if(balance<0) alertText+="赤字！\n";
-  if(totalExpense>budget) alertText+="予算オーバー！";
-  document.getElementById("alert").innerText=alertText;
-
-  drawPie(categoryTotals);
-  drawLine(daily);
-  checkCommunication();
 }
 
-// 編集
-function edit(m,i,key,value){
-  if(key==="amount") value=Number(value);
-  allData[m].expenses[i][key]=value;
-  render();
+// 編集反映
+function edit(mIdx, eIdx, key, val) {
+    if (key === 'amount') val = Number(val);
+    allData[mIdx].expenses[eIdx][key] = val;
+    render(false); // グラフと数値だけ更新
 }
 
-// 円グラフ
-function drawPie(data){
-  if(window.pieChart) window.pieChart.destroy();
+// グラフ用変数
+let pieChart = null;
+let lineChart = null;
 
-  window.pieChart = new Chart(document.getElementById("pie"),{
-    type:"pie",
-    data:{
-      labels:Object.keys(data),
-      datasets:[{data:Object.values(data)}]
-    }
-  });
-}
-
-// 折れ線
-function drawLine(data){
-  if(window.lineChart) window.lineChart.destroy();
-
-  window.lineChart = new Chart(document.getElementById("line"),{
-    type:"line",
-    data:{
-      labels:Object.keys(data),
-      datasets:[{data:Object.values(data)}]
-    }
-  });
-}
-
-// 通信チェック
-function checkCommunication(){
-  let totalGB=0;
-
-  allData.forEach(m=>{
-    m.expenses.forEach(e=>{
-      if(e.category==="通信費"){
-        if(e.name.includes("povo")) totalGB+=25;
-        if(e.name.includes("ahamo")) totalGB+=10;
-      }
+function updateCharts(catData, dayData) {
+    const pieCtx = document.getElementById('pie').getContext('2d');
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(catData),
+            datasets: [{
+                data: Object.values(catData),
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
     });
-  });
 
-  console.log("通信量目安:", totalGB,"GB");
+    const lineCtx = document.getElementById('line').getContext('2d');
+    if (lineChart) lineChart.destroy();
+    // 日付順にソート
+    const sortedDates = Object.keys(dayData).sort();
+    const sortedValues = sortedDates.map(d => dayData[d]);
+
+    lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+            labels: sortedDates,
+            datasets: [{
+                label: '支出額',
+                data: sortedValues,
+                borderColor: '#00e676',
+                tension: 0.1,
+                fill: true,
+                backgroundColor: 'rgba(0, 230, 118, 0.1)'
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
 }
 
 // JSON出力
-function exportJSON(){
-  const blob=new Blob([JSON.stringify(allData,null,2)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="data.json";
-  a.click();
+function exportJSON() {
+    if (allData.length === 0) return alert("データがありません");
+    const blob = new Blob([JSON.stringify(allData, null, 2)], {type: "application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `household_export_${new Date().getTime()}.json`;
+    a.click();
 }
-
 </script>
 
 </body>
