@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家計管理Pro</title>
+
+<style>
+body { background:#111; color:#fff; font-family:sans-serif; padding:10px;}
+input,button,select{width:100%;margin:5px 0;padding:8px;border-radius:6px;border:none;}
+button{background:#00c853;color:#fff;}
+.card{background:#222;padding:10px;margin:10px 0;border-radius:8px;}
+.warn{color:#ff5252;font-weight:bold;}
+canvas{background:#fff;border-radius:10px;}
+</style>
+
+</head>
+<body>
+
+<h1>家計管理Pro</h1>
+
+<input type="file" id="files" multiple>
+<button onclick="exportJSON()">JSON出力</button>
+
+<h2>残金</h2>
+<div id="balance"></div>
+
+<h2>警告</h2>
+<div id="alert"></div>
+
+<h2>データ一覧</h2>
+<div id="list"></div>
+
+<h2>グラフ</h2>
+<canvas id="pie"></canvas>
+<canvas id="line"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let allData = [];
+let budget = 50000; // 仮予算
+
+// ファイル読み込み
+document.getElementById("files").addEventListener("change", e=>{
+  const files = e.target.files;
+  allData = [];
+
+  Array.from(files).forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      allData.push(JSON.parse(reader.result));
+      render();
+    };
+    reader.readAsText(file);
+  });
+});
+
+// 自動カテゴリ分類
+function autoCategory(name){
+  if(name.includes("コンビニ")) return "食費";
+  if(name.includes("ahamo")||name.includes("povo")) return "通信費";
+  return "その他";
+}
+
+// 描画
+function render(){
+  let totalIncome = 0;
+  let totalExpense = 0;
+  let categoryTotals = {};
+  let daily = {};
+
+  const list = document.getElementById("list");
+  list.innerHTML="";
+
+  allData.forEach((monthData,mIndex)=>{
+
+    monthData.expenses.forEach((e,i)=>{
+      if(!e.category) e.category = autoCategory(e.name || "");
+
+      totalExpense += e.amount;
+
+      categoryTotals[e.category]=(categoryTotals[e.category]||0)+e.amount;
+
+      daily[e.date]=(daily[e.date]||0)+e.amount;
+
+      const div=document.createElement("div");
+      div.className="card";
+      div.innerHTML=`
+        ${monthData.month}<br>
+        <input value="${e.name||""}" onchange="edit(${mIndex},${i},'name',this.value)">
+        <input type="number" value="${e.amount}" onchange="edit(${mIndex},${i},'amount',this.value)">
+        <input value="${e.category}" onchange="edit(${mIndex},${i},'category',this.value)">
+      `;
+      list.appendChild(div);
+    });
+
+    if(monthData.income){
+      monthData.income.forEach(i=>{
+        totalIncome+=i.amount;
+      });
+    }
+  });
+
+  const balance = totalIncome - totalExpense;
+
+  document.getElementById("balance").innerText = balance+"円";
+
+  // 警告
+  let alertText="";
+  if(balance<0) alertText+="赤字！\n";
+  if(totalExpense>budget) alertText+="予算オーバー！";
+  document.getElementById("alert").innerText=alertText;
+
+  drawPie(categoryTotals);
+  drawLine(daily);
+  checkCommunication();
+}
+
+// 編集
+function edit(m,i,key,value){
+  if(key==="amount") value=Number(value);
+  allData[m].expenses[i][key]=value;
+  render();
+}
+
+// 円グラフ
+function drawPie(data){
+  if(window.pieChart) window.pieChart.destroy();
+
+  window.pieChart = new Chart(document.getElementById("pie"),{
+    type:"pie",
+    data:{
+      labels:Object.keys(data),
+      datasets:[{data:Object.values(data)}]
+    }
+  });
+}
+
+// 折れ線
+function drawLine(data){
+  if(window.lineChart) window.lineChart.destroy();
+
+  window.lineChart = new Chart(document.getElementById("line"),{
+    type:"line",
+    data:{
+      labels:Object.keys(data),
+      datasets:[{data:Object.values(data)}]
+    }
+  });
+}
+
+// 通信チェック
+function checkCommunication(){
+  let totalGB=0;
+
+  allData.forEach(m=>{
+    m.expenses.forEach(e=>{
+      if(e.category==="通信費"){
+        if(e.name.includes("povo")) totalGB+=25;
+        if(e.name.includes("ahamo")) totalGB+=10;
+      }
+    });
+  });
+
+  console.log("通信量目安:", totalGB,"GB");
+}
+
+// JSON出力
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(allData,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="data.json";
+  a.click();
+}
+
+</script>
+
+</body>
+</html>
