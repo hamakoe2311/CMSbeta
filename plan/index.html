@@ -2,250 +2,231 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家計管理Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家計管理Pro Max</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --bg: #121212;
-            --card: #1e1e1e;
-            --primary: #00e676;
-            --warn: #ff5252;
-            --text: #ffffff;
-            --sub-text: #aaaaaa;
-        }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; padding-bottom: 80px; }
-        h1, h2 { font-size: 1.2rem; margin-top: 20px; border-left: 4px solid var(--primary); padding-left: 10px; }
+        :root { --bg: #121212; --card: #1e1e1e; --primary: #00e676; --sub: #03a9f4; --warn: #ff5252; --text: #fff; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 10px; margin:0; padding-bottom: 100px; }
+        .card { background: var(--card); padding: 15px; margin-bottom: 15px; border-radius: 12px; border: 1px solid #333; }
+        h1, h2 { font-size: 1.2rem; border-left: 4px solid var(--primary); padding-left: 10px; margin: 15px 0; }
         
-        /* スマホ用UI */
-        .card { background: var(--card); padding: 15px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         input, select, button { 
-            width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #333; 
+            width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #444; 
             background: #2c2c2c; color: #fff; font-size: 16px; box-sizing: border-box;
         }
         button { background: var(--primary); color: #000; font-weight: bold; border: none; cursor: pointer; }
-        button:active { opacity: 0.8; }
-        .secondary-btn { background: #444; color: #fff; margin-top: 10px; }
+        .btn-add { background: var(--sub); color: #fff; }
+        .btn-del { background: var(--warn); color: #fff; width: auto; padding: 5px 10px; font-size: 12px; }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
 
-        /* 集計エリア */
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .balance-val { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
-        .alert-box { color: var(--warn); font-weight: bold; min-height: 1.2em; margin-bottom: 10px; }
-
-        /* リスト */
-        .item-row { border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
-        .item-row:last-child { border: none; }
+        .flex { display: flex; gap: 8px; align-items: center; }
+        .summary-val { font-size: 1.4rem; font-weight: bold; }
+        .gb-badge { background: var(--sub); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
         
-        canvas { background: #fff; border-radius: 12px; margin-top: 10px; max-height: 300px; }
-        .comm-info { background: #2c3e50; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; }
+        canvas { background: #fff; border-radius: 12px; margin-bottom: 20px; max-height: 250px; }
+        .expense-row { border-top: 1px solid #333; padding-top: 10px; margin-top: 10px; position: relative; }
     </style>
 </head>
 <body>
 
-<h1>家計管理Pro</h1>
+<h1>家計管理Pro Max</h1>
 
-<!-- ファイル入力 -->
-<div class="card">
-    <label>月別JSONファイルを選択 (複数可)</label>
-    <input type="file" id="files" multiple accept=".json">
-    <div id="commStats" class="comm-info">通信量目安: 0 GB</div>
-</div>
-
-<!-- 集計表示 -->
-<div class="card">
-    <div class="summary-grid">
-        <div>
-            <small>合計残金</small>
-            <div id="balance" class="balance-val">0円</div>
-        </div>
-        <div>
-            <small>予算ステータス</small>
-            <div id="alert" class="alert-box"></div>
-        </div>
+<!-- 全体集計 -->
+<div class="card" id="total-summary">
+    <h2>全期間合計</h2>
+    <div class="flex">
+        <div>残金: <span id="total-balance" class="summary-val">0</span>円</div>
+        <div id="total-gb-label" class="gb-badge">0 GB</div>
     </div>
+    <div id="total-alert" style="color:var(--warn); font-size:0.9rem;"></div>
 </div>
 
-<!-- グラフ -->
-<h2>カテゴリ分析</h2>
+<div class="card">
+    <label>月別JSONを読み込む</label>
+    <input type="file" id="files" multiple accept=".json">
+    <button onclick="addMonth()" class="btn-outline">＋ 新しい月を追加</button>
+</div>
+
 <canvas id="pie"></canvas>
-<h2>支出推移</h2>
 <canvas id="line"></canvas>
 
-<!-- データ編集 -->
-<h2>明細編集</h2>
-<div id="list"></div>
+<!-- 月別データリスト -->
+<div id="month-container"></div>
 
-<button onclick="exportJSON()">編集済みデータをJSONで保存</button>
+<div style="position:fixed; bottom:0; left:0; width:100%; background:#1e1e1e; padding:10px; box-sizing:border-box; display:flex; gap:10px;">
+    <button onclick="exportJSON()">JSONで保存出力</button>
+</div>
 
 <script>
 let allData = [];
-let budgetLimit = 50000; // 予算設定
+
+// カテゴリ定義
+const categories = ["食費", "通信費", "住宅費", "交通費", "娯楽", "その他"];
 
 // ファイル読み込み処理
 document.getElementById("files").addEventListener("change", async e => {
     const files = Array.from(e.target.files);
-    const promises = files.map(file => {
-        return new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(JSON.parse(reader.result));
-            reader.readAsText(file);
-        });
-    });
-
-    allData = await Promise.all(promises);
-    render(true); // 初回読み込み時はリストも描画
+    for (const file of files) {
+        try {
+            const text = await file.text();
+            const json = JSON.parse(text);
+            // 月の重複チェック（簡易）
+            if (!allData.find(d => d.month === json.month)) {
+                allData.push(json);
+            }
+        } catch (err) { alert("失敗: " + file.name); }
+    }
+    render();
 });
 
-// 自動カテゴリ分類ロジック
-function autoCategory(name) {
-    if (!name) return "その他";
-    if (name.includes("コンビニ") || name.includes("スーパー") || name.includes("飯")) return "食費";
-    if (name.includes("ahamo") || name.includes("povo") || name.includes("docomo") || name.includes("通信")) return "通信費";
-    if (name.includes("電車") || name.includes("バス") || name.includes("タクシー")) return "交通費";
-    return "その他";
+// 月を新規追加
+function addMonth() {
+    const m = prompt("月を入力してください (例: 2024-01)", new Date().toISOString().slice(0,7));
+    if (!m) return;
+    allData.push({ month: m, income: [{name:"給料", amount:0}], expenses: [] });
+    render();
 }
 
-// 描画メイン関数
-// updateListがtrueの時だけHTMLのリストを再構築する（入力中に消えないようにするため）
-function render(updateList = false) {
-    let totalIncome = 0;
-    let totalExpense = 0;
-    let categoryTotals = {};
-    let dailyTotals = {};
-    let totalGB = 0;
-
-    allData.forEach((monthData, mIdx) => {
-        // 収入計算
-        if (monthData.income) {
-            monthData.income.forEach(inc => totalIncome += Number(inc.amount));
-        }
-
-        // 支出計算
-        if (monthData.expenses) {
-            monthData.expenses.forEach((exp, eIdx) => {
-                // カテゴリ未設定なら自動分類
-                if (!exp.category) exp.category = autoCategory(exp.name);
-                
-                const amt = Number(exp.amount) || 0;
-                totalExpense += amt;
-
-                // カテゴリ別集計
-                categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + amt;
-
-                // 日別集計（折れ線用）
-                const date = exp.date || monthData.month || "不明";
-                dailyTotals[date] = (dailyTotals[date] || 0) + amt;
-
-                // 通信量計算
-                if (exp.category === "通信費") {
-                    if (exp.name.toLowerCase().includes("povo")) totalGB += 20; // 例
-                    if (exp.name.toLowerCase().includes("ahamo")) totalGB += 30; // 例
-                }
-            });
-        }
+// 明細を追加
+function addExpense(mIdx) {
+    allData[mIdx].expenses.push({
+        date: new Date().toISOString().slice(8,10),
+        name: "",
+        amount: 0,
+        category: "食費",
+        gb: 0 // 通信費用のギガ数
     });
+    render();
+}
 
-    // 残金表示
-    const balance = totalIncome - totalExpense;
-    document.getElementById("balance").innerText = balance.toLocaleString() + "円";
-    
-    // 通信量表示
-    document.getElementById("commStats").innerText = `通信量目安: 約 ${totalGB} GB`;
-
-    // 警告表示
-    const alertEl = document.getElementById("alert");
-    alertEl.innerText = "";
-    if (balance < 0) alertEl.innerText = "赤字発生！ ";
-    if (totalExpense > budgetLimit) alertEl.innerText += "予算オーバー！";
-
-    // グラフ更新
-    updateCharts(categoryTotals, dailyTotals);
-
-    // リスト描画（重い処理なので必要な時だけ）
-    if (updateList) {
-        const listEl = document.getElementById("list");
-        listEl.innerHTML = "";
-        allData.forEach((monthData, mIdx) => {
-            const card = document.createElement("div");
-            card.className = "card";
-            card.innerHTML = `<h3>${monthData.month || "月不明"}</h3>`;
-            
-            monthData.expenses.forEach((exp, eIdx) => {
-                const row = document.createElement("div");
-                row.className = "item-row";
-                row.innerHTML = `
-                    <input type="text" value="${exp.name || ''}" placeholder="品名" onchange="edit(${mIdx}, ${eIdx}, 'name', this.value)">
-                    <div style="display:flex; gap:5px;">
-                        <input type="number" value="${exp.amount}" placeholder="金額" onchange="edit(${mIdx}, ${eIdx}, 'amount', this.value)">
-                        <input type="text" value="${exp.category}" placeholder="カテゴリ" onchange="edit(${mIdx}, ${eIdx}, 'category', this.value)">
-                    </div>
-                `;
-                card.appendChild(row);
-            });
-            listEl.appendChild(card);
-        });
+// 削除
+function deleteExpense(mIdx, eIdx) {
+    if(confirm("この行を削除しますか？")) {
+        allData[mIdx].expenses.splice(eIdx, 1);
+        render();
     }
 }
 
-// 編集反映
-function edit(mIdx, eIdx, key, val) {
-    if (key === 'amount') val = Number(val);
-    allData[mIdx].expenses[eIdx][key] = val;
-    render(false); // グラフと数値だけ更新
+function deleteMonth(mIdx) {
+    if(confirm("この月を丸ごと削除しますか？")) {
+        allData.splice(mIdx, 1);
+        render();
+    }
 }
 
-// グラフ用変数
-let pieChart = null;
-let lineChart = null;
+// 描画
+function render() {
+    const container = document.getElementById("month-container");
+    container.innerHTML = "";
+    
+    let grandIncome = 0;
+    let grandExpense = 0;
+    let grandGB = 0;
+    let categoryMap = {};
+    let dailyMap = {};
 
+    allData.sort((a,b) => a.month > b.month ? 1 : -1).forEach((m, mIdx) => {
+        let mIncome = 0;
+        let mExpense = 0;
+        let mGB = 0;
+
+        (m.income || []).forEach(i => mIncome += Number(i.amount || 0));
+
+        const monthCard = document.createElement("div");
+        monthCard.className = "card";
+        monthCard.innerHTML = `
+            <div class="flex" style="justify-content:space-between">
+                <h2>${m.month}</h2>
+                <button class="btn-del" onclick="deleteMonth(${mIdx})">月削除</button>
+            </div>
+            <label>月収入合計</label>
+            <input type="number" value="${m.income[0]?.amount || 0}" onchange="allData[${mIdx}].income[0].amount=Number(this.value);render()">
+            <div id="exp-list-${mIdx}"></div>
+            <button class="btn-add" onclick="addExpense(${mIdx})">＋ 明細追加</button>
+        `;
+
+        const expList = monthCard.querySelector(`#exp-list-${mIdx}`);
+        (m.expenses || []).forEach((e, eIdx) => {
+            const amt = Number(e.amount || 0);
+            const gb = Number(e.gb || 0);
+            mExpense += amt;
+            mGB += gb;
+            categoryMap[e.category] = (categoryMap[e.category] || 0) + amt;
+            dailyMap[m.month + "-" + e.date] = (dailyMap[m.month + "-" + e.date] || 0) + amt;
+
+            const div = document.createElement("div");
+            div.className = "expense-row";
+            div.innerHTML = `
+                <div class="flex">
+                    <input type="text" style="flex:2" placeholder="品名" value="${e.name}" onchange="allData[${mIdx}].expenses[${eIdx}].name=this.value;render()">
+                    <input type="number" style="flex:1.5" placeholder="金額" value="${e.amount}" onchange="allData[${mIdx}].expenses[${eIdx}].amount=Number(this.value);render()">
+                </div>
+                <div class="flex">
+                    <select style="flex:1" onchange="allData[${mIdx}].expenses[${eIdx}].category=this.value;render()">
+                        ${categories.map(c => `<option value="${c}" ${e.category===c?'selected':''}>${c}</option>`).join('')}
+                    </select>
+                    ${e.category === '通信費' ? 
+                        `<input type="number" style="flex:0.8; border:1px solid var(--sub)" placeholder="GB" value="${e.gb||0}" onchange="allData[${mIdx}].expenses[${eIdx}].gb=Number(this.value);render()">` : ''
+                    }
+                    <button class="btn-del" onclick="deleteExpense(${mIdx}, ${eIdx})">×</button>
+                </div>
+            `;
+            expList.appendChild(div);
+        });
+
+        grandIncome += mIncome;
+        grandExpense += mExpense;
+        grandGB += mGB;
+        container.appendChild(monthCard);
+    });
+
+    // 全体集計更新
+    document.getElementById("total-balance").innerText = (grandIncome - grandExpense).toLocaleString();
+    document.getElementById("total-gb-label").innerText = grandGB + " GB";
+    document.getElementById("total-alert").innerText = grandIncome < grandExpense ? "【警告】トータルで赤字です" : "";
+
+    updateCharts(categoryMap, dailyMap);
+}
+
+// グラフ
+let charts = {};
 function updateCharts(catData, dayData) {
-    const pieCtx = document.getElementById('pie').getContext('2d');
-    if (pieChart) pieChart.destroy();
-    pieChart = new Chart(pieCtx, {
+    const commonOpt = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } };
+    
+    if(charts.pie) charts.pie.destroy();
+    charts.pie = new Chart(document.getElementById("pie"), {
         type: 'doughnut',
         data: {
             labels: Object.keys(catData),
-            datasets: [{
-                data: Object.values(catData),
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
-            }]
+            datasets: [{ data: Object.values(catData), backgroundColor: ['#ff6384','#36a2eb','#ffce56','#4bc0c0','#9966ff','#ff9f40'] }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: commonOpt
     });
 
-    const lineCtx = document.getElementById('line').getContext('2d');
-    if (lineChart) lineChart.destroy();
-    // 日付順にソート
+    if(charts.line) charts.line.destroy();
     const sortedDates = Object.keys(dayData).sort();
-    const sortedValues = sortedDates.map(d => dayData[d]);
-
-    lineChart = new Chart(lineCtx, {
+    charts.line = new Chart(document.getElementById("line"), {
         type: 'line',
         data: {
             labels: sortedDates,
-            datasets: [{
-                label: '支出額',
-                data: sortedValues,
-                borderColor: '#00e676',
-                tension: 0.1,
-                fill: true,
-                backgroundColor: 'rgba(0, 230, 118, 0.1)'
-            }]
+            datasets: [{ label: '支出推移', data: sortedDates.map(d=>dayData[d]), borderColor: '#00e676', tension: 0.2 }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { ...commonOpt, scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } } }
     });
 }
 
-// JSON出力
+// 出力
 function exportJSON() {
-    if (allData.length === 0) return alert("データがありません");
     const blob = new Blob([JSON.stringify(allData, null, 2)], {type: "application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `household_export_${new Date().getTime()}.json`;
+    a.download = "kakei_pro_data.json";
     a.click();
 }
-</script>
 
+// 初期化描画
+render();
+</script>
 </body>
 </html>
