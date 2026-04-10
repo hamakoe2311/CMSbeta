@@ -12,9 +12,10 @@
         }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; margin: 0; padding: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
         
-        /* 共通UI・神UIベース */
         .card { background: var(--card); padding: 16px; margin: 12px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid #222; }
-        h1, h2 { font-size: 1.1rem; margin: 0 0 12px 0; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        h1, h2, h3 { margin: 0 0 12px 0; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        h2 { font-size: 1.1rem; }
+        h3 { font-size: 0.95rem; color: var(--gray); margin-top: 10px; margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 4px; }
         h2::before { content: ""; display: inline-block; width: 4px; height: 16px; background: var(--primary); border-radius: 2px; }
         h2.green::before { background: var(--sub); }
         h2.red::before { background: var(--warn); }
@@ -29,6 +30,7 @@
         button { background: var(--primary); color: #fff; font-weight: bold; border: none; cursor: pointer; }
         button:active { opacity: 0.7; transform: scale(0.98); }
         .btn-sub { background: #2c2c2e; color: var(--primary); }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
         .btn-del { background: rgba(255, 69, 58, 0.15); color: var(--warn); padding: 8px; width: auto; font-size: 14px; }
         
         .flex { display: flex; gap: 8px; align-items: center; }
@@ -36,7 +38,6 @@
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .badge { padding: 4px 8px; border-radius: 8px; font-size: 0.75rem; background: #333; color: #fff; white-space: nowrap; font-weight: bold; }
         
-        /* タブナビゲーション */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--nav-bg); backdrop-filter: blur(10px); display: flex; border-top: 1px solid #222; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
         .nav-item { flex: 1; text-align: center; padding: 12px 0; color: var(--gray); font-size: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .nav-item.active { color: var(--primary); }
@@ -46,22 +47,25 @@
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 今日のUI特化 */
         .task-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #222; }
         .task-item:last-child { border-bottom: none; }
         .task-item.done span.text { text-decoration: line-through; color: var(--gray); }
         .task-checkbox { width: 24px; height: 24px; accent-color: var(--primary); flex-shrink: 0; }
         
-        /* カレンダーUI */
+        /* カレンダー */
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 10px; }
         .cal-header { font-size: 0.8rem; color: var(--gray); margin-bottom: 4px; }
-        .cal-day { padding: 10px 0; border-radius: 8px; background: #1c1c1e; position: relative; cursor: pointer; }
-        .cal-day.today { border: 1px solid var(--primary); }
-        .cal-day.active { background: var(--primary); color: #fff; }
+        .cal-day { padding: 10px 0; border-radius: 8px; background: #1c1c1e; position: relative; cursor: pointer; border: 1px solid transparent; }
+        .cal-day.today { background: rgba(10, 132, 255, 0.15); }
+        .cal-day.selected { border-color: var(--sub); background: #2c2c2e; }
         .dots { display: flex; justify-content: center; gap: 2px; margin-top: 2px; height: 4px; }
         .dot { width: 4px; height: 4px; border-radius: 50%; }
 
-        /* 家計UI */
+        /* カレンダープレビュー */
+        .preview-box { background: #1a1a1c; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9rem; }
+        .preview-list-item { padding: 4px 0; border-bottom: 1px dashed #333; }
+        .preview-list-item:last-child { border-bottom: none; }
+
         canvas { background: transparent !important; margin: 10px 0; max-height: 220px; width: 100% !important; }
         .finance-summary { text-align: center; padding: 15px; background: #1c1c1e; border-radius: 12px; margin-bottom: 10px; }
         .finance-val { font-size: 1.8rem; font-weight: bold; color: var(--sub); font-family: monospace; }
@@ -70,7 +74,7 @@
 </head>
 <body>
 
-<!-- 1. 今日タブ (メイン) -->
+<!-- 1. 今日タブ -->
 <div id="view-today" class="view active">
     <div class="flex" style="justify-content: center; margin: 10px 0;">
         <button id="btn-prev-day" class="btn-sub" style="width:40px; border-radius:20px;">◀</button>
@@ -78,7 +82,6 @@
         <button id="btn-next-day" class="btn-sub" style="width:40px; border-radius:20px;">▶</button>
     </div>
 
-    <!-- タスク -->
     <div class="card">
         <h2>今日のタスク</h2>
         <div class="flex" style="margin-bottom:10px;">
@@ -89,13 +92,11 @@
         <div id="task-list"></div>
     </div>
 
-    <!-- 今日のメモ -->
     <div class="card">
         <h2 class="green">今日のメモ</h2>
-        <textarea id="today-memo" placeholder="今日起きたこと、パッと思いついたこと... (自動保存)" style="background:transparent; border:none; padding:0; min-height:100px; font-size:1rem;"></textarea>
+        <textarea id="today-memo" placeholder="今日起きたこと、パッと思いついたこと... (自動保存)" style="background:transparent; border:none; padding:0; min-height:80px; font-size:1rem;"></textarea>
     </div>
 
-    <!-- KPT振り返り -->
     <div class="card">
         <h2 class="red">KPT 振り返り</h2>
         <div style="font-size:0.8rem; color:var(--sub); margin-top:10px;">【Keep】できたこと</div>
@@ -112,7 +113,7 @@
     <div class="card">
         <div class="flex" style="justify-content:space-between; margin-bottom:15px;">
             <button id="cal-prev" class="btn-sub" style="width:auto;">◀ 先月</button>
-            <h2 id="cal-title" style="margin:0;">2024年 4月</h2>
+            <h2 id="cal-title" style="margin:0;"></h2>
             <button id="cal-next" class="btn-sub" style="width:auto;">来月 ▶</button>
         </div>
         <div class="cal-grid" id="cal-header-row">
@@ -121,9 +122,18 @@
         <div class="cal-grid" id="cal-body"></div>
         <div class="flex" style="justify-content:center; gap:15px; margin-top:15px; font-size:0.75rem; color:var(--gray);">
             <div class="flex"><div class="dot" style="background:var(--primary)"></div>タスク</div>
-            <div class="flex"><div class="dot" style="background:var(--sub)"></div>メモ</div>
+            <div class="flex"><div class="dot" style="background:var(--sub)"></div>メモ/KPT</div>
             <div class="flex"><div class="dot" style="background:var(--warn)"></div>支出</div>
         </div>
+    </div>
+    
+    <!-- プレビュー領域 -->
+    <div class="card" id="cal-preview-container" style="display:none;">
+        <div class="flex" style="justify-content:space-between;">
+            <h2 id="preview-title" class="green"></h2>
+            <button class="btn-outline" style="width:auto; padding:4px 10px; font-size:0.8rem;" onclick="jumpToDate(calSelectedDate); document.querySelector('[data-target=\'view-today\']').click();">編集する</button>
+        </div>
+        <div id="preview-content"></div>
     </div>
 </div>
 
@@ -150,18 +160,25 @@
             <select id="fin-month-select" style="width:auto; font-weight:bold;"></select>
         </div>
     </div>
-    
     <div id="finance-content"></div>
 </div>
 
-<!-- 5. 設定タブ -->
+<!-- 5. 設定タブ (AI解析対応) -->
 <div id="view-backup" class="view">
     <div class="card">
-        <h2>データ一括管理</h2>
-        <p style="font-size:0.8rem; color:var(--gray);">家計、タスク、メモ、全てを1つのJSONにバックアップ。</p>
-        <button id="btn-export">📥 JSONをダウンロード</button>
-        <div style="margin-top:20px; font-size:0.9rem;">📤 復元・マージ</div>
+        <h2>全データバックアップ (統合)</h2>
+        <p style="font-size:0.8rem; color:var(--gray);">すべてのデータを1つのJSONにまとめます。</p>
+        <button id="btn-export-all">📦 全データをダウンロード</button>
+        <div style="margin-top:20px; font-size:0.9rem;">📤 復元・マージ (統合JSONを選択)</div>
         <input type="file" id="file-import" accept=".json">
+    </div>
+
+    <div class="card">
+        <h2 class="green">AI解析用 個別エクスポート</h2>
+        <p style="font-size:0.8rem; color:var(--gray);">特定のデータのみを抽出し、ローカルAIなどに読み込ませやすくします。</p>
+        <button class="btn-sub" onclick="exportSpecific('dates', 'DailyLog')">📝 日報・タスクのみ (JSON)</button>
+        <button class="btn-sub" onclick="exportSpecific('memos', 'StockMemo')">📚 ストックメモのみ (JSON)</button>
+        <button class="btn-sub" onclick="exportSpecific('finance', 'Finance')">¥ 家計・通信履歴のみ (JSON)</button>
     </div>
 </div>
 
@@ -170,12 +187,12 @@
     <div class="nav-item active" data-target="view-today"><div class="nav-icon">📝</div>今日</div>
     <div class="nav-item" data-target="view-calendar"><div class="nav-icon">📅</div>カレンダー</div>
     <div class="nav-item" data-target="view-memo"><div class="nav-icon">📚</div>メモ</div>
-    <div class="nav-item" data-target="view-finance"><div class="nav-icon">¥</div>家計・GB</div>
+    <div class="nav-item" data-target="view-finance"><div class="nav-icon">¥</div>家計</div>
     <div class="nav-item" data-target="view-backup"><div class="nav-icon">⚙️</div>設定</div>
 </div>
 
 <script>
-/* --- Chart.js ダークモード設定 --- */
+/* --- Chart.js ダーク設定 --- */
 Chart.defaults.color = '#8e8e93';
 Chart.defaults.borderColor = '#333';
 
@@ -183,6 +200,7 @@ Chart.defaults.borderColor = '#333';
 let appState = JSON.parse(localStorage.getItem('lifeos_pro')) || { dates: {}, memos: [], finance: [] };
 let currentDate = new Date().toISOString().split('T')[0];
 let calDate = new Date();
+let calSelectedDate = currentDate; // カレンダーで選択中の日付
 let activeTab = 'view-today';
 let charts = {};
 
@@ -201,7 +219,7 @@ function ensureDate(dateStr) {
 function ensureFinanceMonth(monthStr) {
     if (!appState.finance.find(f => f.month === monthStr)) {
         setState(s => s.finance.push({ 
-            month: monthStr, income: 0, fixed: 0, loan: 0, savings: 0, investment: 0, 
+            month: monthStr, income: 0, extraIncome: 0, fixed: 0, loan: 0, savings: 0, investment: 0, 
             expenses: [], carriers: [{ name: "メイン", limit: 30, used: 0 }] 
         }), false);
     }
@@ -262,7 +280,7 @@ function init() {
     document.getElementById('memo-search').addEventListener('input', renderMemos);
 
     // バックアップ
-    document.getElementById('btn-export').addEventListener('click', exportData);
+    document.getElementById('btn-export-all').addEventListener('click', () => exportSpecific('all', 'AllData'));
     document.getElementById('file-import').addEventListener('change', importData);
 
     renderActiveTab();
@@ -315,7 +333,7 @@ function addTask() {
     textEl.value = "";
 }
 
-/* --- 2. カレンダータブ --- */
+/* --- 2. カレンダー機能 (プレビュー対応) --- */
 function renderCalendar() {
     const y = calDate.getFullYear(), m = calDate.getMonth();
     document.getElementById('cal-title').innerText = `${y}年 ${m+1}月`;
@@ -333,7 +351,7 @@ function renderCalendar() {
         const finMonth = appState.finance.find(f => f.month === dateStr.slice(0,7));
         
         let hasTask = data && data.tasks.length > 0;
-        let hasMemo = data && (data.todayMemo || data.reflection.keep);
+        let hasMemo = data && (data.todayMemo || data.reflection.keep || data.reflection.problem || data.reflection.try);
         let hasExp = finMonth && finMonth.expenses.some(e => e.date === String(d).padStart(2,'0'));
 
         const dots = el('div', { className: 'dots' });
@@ -343,11 +361,70 @@ function renderCalendar() {
 
         let classes = 'cal-day';
         if (dateStr === currentDate) classes += ' today';
+        if (dateStr === calSelectedDate) classes += ' selected';
 
         body.appendChild(el('div', { className: classes, onClick: () => {
-            jumpToDate(dateStr);
-            document.querySelector('[data-target="view-today"]').click();
+            calSelectedDate = dateStr;
+            renderCalendar(); // 選択枠を更新
         }}, el('div', {}, d), dots));
+    }
+    
+    renderCalendarPreview();
+}
+
+// カレンダー下のプレビュー描画
+function renderCalendarPreview() {
+    document.getElementById('cal-preview-container').style.display = 'block';
+    document.getElementById('preview-title').innerText = calSelectedDate + " の記録";
+    
+    const content = document.getElementById('preview-content');
+    content.innerHTML = "";
+    
+    const data = appState.dates[calSelectedDate];
+    const finMonth = appState.finance.find(f => f.month === calSelectedDate.slice(0,7));
+    const exps = finMonth ? finMonth.expenses.filter(e => e.date === calSelectedDate.slice(8,10)) : [];
+
+    let hasAnyData = false;
+
+    if (data && data.tasks.length > 0) {
+        hasAnyData = true;
+        const div = el('div', {className:'preview-box'});
+        div.appendChild(el('h3', {}, "✅ タスク"));
+        data.tasks.forEach(t => div.appendChild(el('div', {className:'preview-list-item'}, `${t.done?'[済]':'[未]'} ${t.text}`)));
+        content.appendChild(div);
+    }
+    
+    if (data && data.todayMemo) {
+        hasAnyData = true;
+        const div = el('div', {className:'preview-box'});
+        div.appendChild(el('h3', {}, "📝 メモ"));
+        div.appendChild(el('div', {style:'white-space:pre-wrap;'}, data.todayMemo));
+        content.appendChild(div);
+    }
+
+    if (data && (data.reflection.keep || data.reflection.problem || data.reflection.try)) {
+        hasAnyData = true;
+        const div = el('div', {className:'preview-box'});
+        div.appendChild(el('h3', {}, "🔄 KPT 振り返り"));
+        if(data.reflection.keep) div.appendChild(el('div', {style:'color:var(--sub)'}, "K: " + data.reflection.keep));
+        if(data.reflection.problem) div.appendChild(el('div', {style:'color:var(--warn)'}, "P: " + data.reflection.problem));
+        if(data.reflection.try) div.appendChild(el('div', {style:'color:var(--primary)'}, "T: " + data.reflection.try));
+        content.appendChild(div);
+    }
+
+    if (exps.length > 0) {
+        hasAnyData = true;
+        const div = el('div', {className:'preview-box', style:'border: 1px solid var(--warn); background:rgba(255,69,58,0.05);'});
+        div.appendChild(el('h3', {}, "¥ 支出"));
+        exps.forEach(e => div.appendChild(el('div', {className:'preview-list-item flex', style:'justify-content:space-between'}, 
+            el('span', {}, e.name || '無名'), 
+            el('span', {style:'font-family:monospace; color:var(--warn);'}, `¥${Number(e.amount).toLocaleString()}`)
+        )));
+        content.appendChild(div);
+    }
+
+    if (!hasAnyData) {
+        content.appendChild(el('div', {style:'text-align:center; color:var(--gray); padding:20px;'}, "この日の記録はありません"));
     }
 }
 
@@ -385,7 +462,6 @@ function renderFinance() {
         sel.appendChild(el('option', { value: f.month }, f.month));
     });
     
-    // イベント重複防止のため再生成
     sel.onchange = (e) => drawFinanceMonth(e.target.value);
     
     const curMonth = sel.value || currentDate.slice(0,7);
@@ -401,14 +477,13 @@ function drawFinanceMonth(monthStr) {
     if(mIdx < 0) return;
     const f = appState.finance[mIdx];
 
-    // 数値の安全取得
     const getN = (v) => Number(v)||0;
     const upd = (key, val) => setState(s => s.finance[mIdx][key] = val);
 
-    // 計算
-    const income = getN(f.income);
+    // 月収＋臨時収入
+    const totalIncome = getN(f.income) + getN(f.extraIncome);
     const deduct = getN(f.fixed) + getN(f.loan) + getN(f.savings) + getN(f.investment);
-    const budget = income - deduct;
+    const budget = totalIncome - deduct;
     let expTotal = 0;
     let catMap = {};
     (f.expenses||[]).forEach(e => {
@@ -417,7 +492,6 @@ function drawFinanceMonth(monthStr) {
     });
     const balance = budget - expTotal;
 
-    // 1. サマリーと基本設定
     const sumCard = el('div', {className:'card finance-summary'},
         el('div', {style:'font-size:0.9rem; color:var(--gray);'}, "今月の使えるお金 (予算)"),
         el('div', {className:'finance-val', style:'color:var(--primary)'}, `¥${budget.toLocaleString()}`),
@@ -426,9 +500,10 @@ function drawFinanceMonth(monthStr) {
     );
 
     const baseCard = el('div', {className:'card'},
-        el('h2', {}, "基本設定 (月収・固定・投資)"),
+        el('h2', {}, "収入・固定費 設定"),
         el('div', {className:'grid-2'},
-            el('div', {}, el('label',{style:'font-size:0.8rem'},"月収"), el('input', {type:'number', value:f.income, onChange:e=>upd('income', e.target.value)})),
+            el('div', {}, el('label',{style:'font-size:0.8rem'},"月収(基本)"), el('input', {type:'number', value:f.income, onChange:e=>upd('income', e.target.value)})),
+            el('div', {}, el('label',{style:'font-size:0.8rem; color:var(--sub)'},"臨時収入"), el('input', {type:'number', value:f.extraIncome, onChange:e=>upd('extraIncome', e.target.value)})),
             el('div', {}, el('label',{style:'font-size:0.8rem'},"固定費"), el('input', {type:'number', value:f.fixed, onChange:e=>upd('fixed', e.target.value)})),
             el('div', {}, el('label',{style:'font-size:0.8rem'},"ローン等"), el('input', {type:'number', value:f.loan, onChange:e=>upd('loan', e.target.value)})),
             el('div', {}, el('label',{style:'font-size:0.8rem'},"通常預金"), el('input', {type:'number', value:f.savings, onChange:e=>upd('savings', e.target.value)})),
@@ -436,12 +511,10 @@ function drawFinanceMonth(monthStr) {
         )
     );
 
-    // 2. 複数キャリアGB管理
     const gbCard = el('div', {className:'card'},
         el('h2', {}, "通信GB アラート管理"),
         ...(f.carriers||[]).map((c, cIdx) => {
-            const ratio = getN(c.used) / (getN(c.limit)||1);
-            const isAlert = ratio >= 0.8;
+            const isAlert = (getN(c.used) / (getN(c.limit)||1)) >= 0.8;
             return el('div', {className:`grid-3 ${isAlert?'gb-alert':''}`, style:'align-items:end; margin-bottom:10px; padding:8px; border-radius:8px; background:#1c1c1e;'},
                 el('div', {}, el('label',{style:'font-size:0.7rem'},"回線名"), el('input', {value:c.name, onChange:e=>setState(s=>s.finance[mIdx].carriers[cIdx].name=e.target.value)})),
                 el('div', {}, el('label',{style:'font-size:0.7rem'},"上限GB"), el('input', {type:'number', value:c.limit, onChange:e=>setState(s=>s.finance[mIdx].carriers[cIdx].limit=e.target.value)})),
@@ -451,7 +524,6 @@ function drawFinanceMonth(monthStr) {
         el('button', {className:'btn-sub', onClick:()=>setState(s=>s.finance[mIdx].carriers.push({name:"サブ", limit:10, used:0}))}, "＋ 回線追加")
     );
 
-    // 3. 支出リスト
     const expCard = el('div', {className:'card'},
         el('h2', {className:'red'}, "変動費 (支出明細)"),
         el('button', {onClick:()=>setState(s=>s.finance[mIdx].expenses.unshift({date:currentDate.slice(8,10), name:"", amount:"", category:"食費"}))}, "＋ 支出を記録"),
@@ -459,7 +531,8 @@ function drawFinanceMonth(monthStr) {
             ...(f.expenses||[]).map((e, eIdx) => 
                 el('div', {style:'background:#1c1c1e; padding:10px; border-radius:8px; margin-bottom:8px;'},
                     el('div', {className:'flex'},
-                        el('input', {type:'number', placeholder:'日', value:e.date, style:'width:50px;', onChange:ev=>setState(s=>s.finance[mIdx].expenses[eIdx].date=ev.target.value)}),
+                        // 購入日とわかるようにプレースホルダーを明記
+                        el('input', {type:'number', placeholder:'購入日(日)', value:e.date, style:'width:90px;', onChange:ev=>setState(s=>s.finance[mIdx].expenses[eIdx].date=ev.target.value)}),
                         el('input', {type:'text', placeholder:'品名', value:e.name, style:'flex:2;', onChange:ev=>setState(s=>s.finance[mIdx].expenses[eIdx].name=ev.target.value)}),
                         el('input', {type:'number', placeholder:'金額', value:e.amount, style:'flex:1.5;', onChange:ev=>setState(s=>s.finance[mIdx].expenses[eIdx].amount=ev.target.value)})
                     ),
@@ -474,7 +547,6 @@ function drawFinanceMonth(monthStr) {
         )
     );
 
-    // 4. グラフ
     const chartCard = el('div', {className:'card'},
         el('h2', {}, "支出割合"),
         el('canvas', {id:'finance-pie'})
@@ -482,7 +554,6 @@ function drawFinanceMonth(monthStr) {
 
     container.append(sumCard, baseCard, gbCard, expCard, chartCard);
 
-    // グラフ描画（DOM追加後）
     setTimeout(() => {
         if(charts.pie) charts.pie.destroy();
         charts.pie = new Chart(document.getElementById("finance-pie"), {
@@ -493,20 +564,30 @@ function drawFinanceMonth(monthStr) {
     }, 0);
 }
 
-/* --- 5. データ連携 --- */
-function exportData() {
+/* --- 5. データ連携 (AI解析用 個別エクスポート対応) --- */
+function exportSpecific(type, fileNamePrefix) {
+    let exportData;
+    if (type === 'all') {
+        exportData = appState;
+    } else {
+        // 特定のキーのみ抽出してエクスポート
+        exportData = appState[type];
+    }
+    
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(appState, null, 2)], {type: "application/json"}));
-    a.download = `LifeOS_Max_${currentDate}.json`;
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(exportData, null, 2)], {type: "application/json"}));
+    a.download = `LifeOS_${fileNamePrefix}_${currentDate}.json`;
     a.click();
 }
+
 async function importData(e) {
     if(!e.target.files.length) return;
     try {
         const json = JSON.parse(await e.target.files[0].text());
+        // 統合JSONの読み込み
         if(json.dates) Object.assign(appState.dates, json.dates);
-        if(json.memos) appState.memos = json.memos; // 上書き
-        if(json.finance) appState.finance = json.finance; // 上書き
+        if(json.memos) appState.memos = json.memos;
+        if(json.finance) appState.finance = json.finance;
         saveState();
         alert("復元完了しました");
         location.reload();
