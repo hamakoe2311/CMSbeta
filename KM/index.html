@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CMS Web Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-modern">
+
+    <!-- ポケットモード（疑似バックグラウンド）オーバーレイ -->
+    <div id="pocket-overlay" class="hidden">
+        <div class="pocket-hint"><i class="fas fa-lock"></i> 2秒長押し または 上スワイプで解除</div>
+        <div class="pocket-content">
+            <div id="pocket-clock-container" style="margin-bottom: 20px;">
+                <div id="pocket-clock-text" class="theme-text digital1" style="font-size: 4rem;">00:00</div>
+                <div id="pocket-analog-clock" class="analog-clock hidden">
+                    <div class="hand hour-hand"></div>
+                    <div class="hand minute-hand"></div>
+                    <div class="hand second-hand"></div>
+                    <div class="center-dot"></div>
+                </div>
+            </div>
+            
+            <img id="pocket-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>">
+            <h2 id="pocket-title" class="theme-text" style="text-align: center; margin-top: 15px; font-size: 1.2rem; padding: 0 20px;">Not Playing</h2>
+            
+            <div class="progress-area" style="width: 80%; max-width: 300px; margin-top: 15px;">
+                <span id="pocket-time-current" class="time-text">0:00</span>
+                <div class="progress-container"><div class="progress-bar" id="pocket-progress-bar"></div></div>
+                <span id="pocket-time-duration" class="time-text">0:00</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="import-screen" class="overlay-screen">
+        <div class="start-content panel-glass">
+            <h1 class="theme-text" style="margin-top:0;">CMS Web Player</h1>
+            <p>JSONファイルを読み込んでください。</p>
+            <label for="import-json" class="custom-file-upload theme-btn"><i class="fas fa-file-import"></i> ファイルを選択</label>
+            <input type="file" id="import-json" accept=".json">
+        </div>
+    </div>
+
+    <div id="ready-screen" class="overlay-screen hidden">
+        <div class="start-content panel-glass" style="text-align: center;">
+            <h2 class="theme-text" style="margin-top:0;">Ready</h2>
+            <p>データの読み込みが完了しました。</p>
+            <button class="btn-start theme-btn" id="btn-user-start"><i class="fas fa-play"></i> PLAY START</button>
+        </div>
+    </div>
+
+    <div id="main-app" class="hidden">
+        <div class="widget-container" id="widget-container">
+            <!-- 左ペイン: 固定レイアウト -->
+            <div id="left-pane" class="pc-column">
+                <div id="widget-clock" class="panel-glass">
+                    <div class="clock-inner">
+                        <div id="clock-date">----/--/--</div>
+                        <div id="clock-time" class="theme-text">00:00:00</div>
+                        <div id="analog-clock" class="analog-clock hidden">
+                            <div class="hand hour-hand"></div>
+                            <div class="hand minute-hand"></div>
+                            <div class="hand second-hand"></div>
+                            <div class="center-dot"></div>
+                        </div>
+                    </div>
+                    <div id="list-toggle-wrapper"><button id="btn-toggle-list"><i class="fas fa-list"></i> <span id="toggle-list-text">リストを表示</span></button></div>
+                </div>
+
+                <div id="widget-player" class="panel-glass">
+                    <div id="player-container"></div>
+                </div>
+
+                <div id="widget-controls" class="panel-glass">
+                    <div class="player-controls-inner">
+                        <img id="widget-art" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/>" class="widget-art">
+                        <div class="widget-info-container">
+                            <div class="widget-info overflow-hidden">
+                                <div class="marquee-wrapper"><h2 id="widget-title" class="theme-text marquee-content">Not Playing</h2></div>
+                                <div class="marquee-wrapper"><p id="widget-artist" class="marquee-content">---</p></div>
+                            </div>
+                            <div class="progress-area">
+                                <span id="time-current" class="time-text">0:00</span>
+                                <div class="progress-container" id="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+                                <span id="time-duration" class="time-text">0:00</span>
+                            </div>
+                            <div class="widget-controls">
+                                <div class="controls-main">
+                                    <button id="widget-btn-prev"><i class="fas fa-backward-step"></i></button>
+                                    <button id="widget-btn-play" class="play-btn theme-btn"><i class="fas fa-play" id="widget-play-icon"></i></button>
+                                    <button id="widget-btn-next"><i class="fas fa-forward-step"></i></button>
+                                    <button id="widget-btn-fullscreen"><i class="fas fa-expand"></i></button>
+                                    <button id="btn-pocket-mode" style="color:var(--accent-color); margin-left: 10px;"><i class="fas fa-lock"></i></button>
+                                </div>
+                                <button id="btn-open-settings" class="settings-btn"><i class="fas fa-cog"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右ペイン: ライブラリ -->
+            <div id="right-pane" class="pc-column">
+                <div id="widget-library">
+                    <div id="mobile-tools-wrapper">
+                        <div class="current-folder-info panel-glass" id="btn-open-mobile-folder">
+                            <div style="display:flex; align-items: center; padding: 15px;">
+                                <i class="fas fa-play-circle" style="font-size: 1.8rem; margin-right: 15px; color: var(--text-color);"></i>
+                                <div style="display:flex; flex-direction:column; flex:1;">
+                                    <span id="current-folder-name" style="font-weight:bold; font-size:1.1rem;">All</span>
+                                    <span style="font-size:0.8rem; opacity:0.8;" id="current-folder-count">--件のアイテム</span>
+                                </div>
+                                <span style="font-size:0.9rem; margin-right: 15px; font-weight:bold;">フォルダ</span>
+                            </div>
+                        </div>
+                        <button id="btn-toggle-mobile-nav" class="panel-glass"><i class="fas fa-filter"></i></button>
+                    </div>
+
+                    <div id="library-nav-wrapper" class="panel-glass">
+                        <div class="controls-wrapper">
+                            <label class="filter-option"><input type="checkbox" id="exclude-nico"> ニコ除外</label>
+                            <select id="widget-sort-select" class="widget-search">
+                                <option value="custom">🔢 カスタム順</option><option value="newest">📅 新しい順</option><option value="oldest">📅 古い順</option><option value="playCount_desc">▶ 再生数順</option>
+                            </select>
+                            <input type="text" id="widget-search-box" class="widget-search" placeholder="Search...">
+                        </div>
+                    </div>
+
+                    <div class="library-lists-container">
+                        <div id="widget-folder-list-wrapper" class="panel-glass"><div class="w-folder-list" id="widget-folder-list"></div></div>
+                        <div id="widget-track-list-wrapper" class="panel-glass"><div class="w-track-list" id="widget-track-list"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- スマホ用フォルダ選択 -->
+    <div id="mobile-folder-modal" class="overlay-screen hidden" style="z-index: 9500; align-items: flex-end;">
+        <div class="panel-glass settings-window" style="width: 100%; max-width: none; max-height: 75vh; padding: 0; display: flex; flex-direction: column; border-bottom-left-radius: 0; border-bottom-right-radius: 0;">
+            <div style="padding: 15px; text-align: center; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 1.2rem;">フォルダを選択</div>
+            <div id="mobile-folder-list-modal" style="overflow-y: auto; flex: 1;"></div>
+            <div style="padding: 15px;"><button id="btn-close-folder-modal" class="theme-btn" style="width: 100%; padding: 15px; border-radius: 30px; font-size: 1.1rem;">閉じる</button></div>
+        </div>
+    </div>
+
+    <!-- 設定モーダル -->
+    <div id="settings-modal" class="overlay-screen hidden" style="z-index: 9999;">
+        <div class="panel-glass settings-window">
+            <h2 class="theme-text" style="margin-top:0; padding-bottom:5px;"><i class="fas fa-cog"></i> System Settings</h2>
+            <div class="settings-tabs">
+                <button class="tab-btn active" data-tab="basic">基本設定</button>
+                <button class="tab-btn" data-tab="advanced">詳細設定</button>
+            </div>
+
+            <div class="setting-scroll-area">
+                <!-- 基本設定タブ -->
+                <div id="tab-basic" class="tab-content active">
+                    <div class="setting-row">
+                        <label>テーマ</label>
+                        <select id="set-theme" class="widget-search"><option value="modern">現代UI風 (Modern)</option><option value="nerv">エヴァ風 (NERV)</option><option value="toyota">トヨタナビ風 (Car Navi)</option></select>
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                        <label style="color: #ffaa00;"><input type="checkbox" id="set-data-saver"> 📉 データセーバー (低画質再生)</label>
+                        <span style="font-size:0.75rem; opacity:0.8;">※ニコニコ動画等、仕様上画質が自動調整される場合があります</span>
+                    </div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-performance-mode"> ⚡ 軽量化 (動作を軽くする)</label></div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-music-mode"> 🎵 音楽モード (モバイルSpotify風UI)</label></div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-show-thumbnails"> 🖼 サムネイルを表示</label></div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-show-clock"> 🕒 時計を表示</label></div>
+                    <div class="setting-row"><label><input type="checkbox" id="set-simple-layout"> 💻 PC向け シンプルレイアウト</label></div>
+                </div>
+
+                <!-- 詳細設定タブ -->
+               <div id="tab-advanced" class="tab-content">
+                    <div class="setting-row"><label><input type="checkbox" id="set-use-custom-color"> カスタムカラーを有効にする</label></div>
+                    <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px;">
+                        <div style="flex:1;"><label>文字色</label><input type="color" id="set-accent-color" value="#00aaff"></div>
+                        <div style="flex:1;"><label>枠線の色</label><input type="color" id="set-border-color" value="#ffffff"></div>
+                    </div>
+                    <div class="setting-row" style="display: flex; flex-direction: row; gap: 15px; margin-top: 10px;">
+                        <div style="flex:1;"><label>文字サイズ: <span id="font-val">100</span>%</label><input type="range" id="set-font-size" min="80" max="150" step="5" value="100"></div>
+                        <div style="flex:1;"><label>PC左パネル幅: <span id="pc-width-val">350</span>px</label><input type="range" id="set-pc-left-width" min="250" max="600" step="10" value="350"></div>
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <label>背景画像 (写真等)</label>
+                        <div style="display:flex; gap:10px;">
+                            <input type="file" id="set-bg-img" accept="image/*" style="font-size:0.8rem; flex:1;">
+                            <button id="btn-clear-bg" class="theme-btn" style="padding: 5px 10px; font-size:0.8rem;">クリア</button>
+                        </div>
+                    </div>
+                    <div class="setting-row" style="display: flex; flex-direction: row; gap: 10px; margin-top: 5px;">
+                        <div style="flex:1;"><label>表示位置</label><select id="set-bg-position" class="widget-search" style="width:100%; font-size:0.8rem;"><option value="center">中央</option><option value="top">上</option><option value="bottom">下</option></select></div>
+                        <div style="flex:1;"><label>サイズ</label><select id="set-bg-size" class="widget-search" style="width:100%; font-size:0.8rem;"><option value="cover">全画面カバー</option><option value="contain">全体を収める</option></select></div>
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px;">
+                        <label>透明度 (100:透明 / 0:ぼかし最大): <span id="op-val">50</span></label>
+                        <input type="range" id="set-opacity" min="0" max="100" step="1" value="50">
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <label>PC版 時計スタイル</label>
+                        <select id="set-clock-type" class="widget-search">
+                            <option value="digital1">デジタル 1 (標準)</option>
+                            <option value="digital2">デジタル 2 (7セグ風)</option>
+                            <option value="analog">アナログ時計</option>
+                        </select>
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px;">
+                        <label>ロック画面(ポケット) 時計スタイル</label>
+                        <select id="set-pocket-clock-type" class="widget-search">
+                            <option value="digital1">デジタル 1 (標準)</option>
+                            <option value="digital2">デジタル 2 (7セグ風)</option>
+                            <option value="analog">アナログ時計</option>
+                            <option value="none">非表示</option>
+                        </select>
+                    </div>
+                    <div class="setting-row" style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <label>ニコニコ音量ブースト: <span id="boost-val">1.0</span>x</label>
+                        <input type="range" id="set-nico-boost" min="1" max="5" step="0.5" value="1">
+                        <span style="font-size:0.75rem; opacity:0.8;">※ブラウザの制約上、YouTubeの基本音量を相対的に下げることでブーストをシミュレートします。</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-actions">
+                <button id="btn-save-settings" class="theme-btn" style="flex:1;">Save & Apply</button>
+                <button id="btn-reset-settings" style="background:#ff4444; color:#fff; border:none; border-radius:30px; cursor:pointer;">Reset</button>
+                <button id="btn-close-settings" style="background:transparent; color:#fff; border:1px solid #fff; border-radius:30px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
